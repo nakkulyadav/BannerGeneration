@@ -31,8 +31,8 @@ export const LAYOUT = {
 
   // Vertical spacing between elements (1x values)
   SPACING: {
-    LOGO_TO_HEADING: 10,
-    HEADING_TO_SUBHEADING: 20,
+    LOGO_TO_HEADING: 15,
+    HEADING_TO_SUBHEADING: 15,
     SUBHEADING_TO_CTA: 10,
     CTA_TO_TC: 8,
   },
@@ -62,7 +62,7 @@ export const LOGO = {
 export const TEXT = {
   HEADING: {
     FONT_FAMILY: 'Inter',
-    FONT_WEIGHT: 600, // Semibold
+    FONT_WEIGHT: 1000, 
     FONT_SIZE: 28,
     MAX_CHARS: 40,
     MAX_WIDTH: 320, // Fills left section (361 - 40 margin ≈ 320)
@@ -84,7 +84,7 @@ export const TEXT = {
   },
   SUBHEADING_SINGLE: {
     FONT_FAMILY: 'Inter',
-    FONT_WEIGHT: 600, // Semibold
+    FONT_WEIGHT: 800, 
     FONT_SIZE: 28,
   },
   // Common subheading settings
@@ -134,7 +134,7 @@ export const TEXT = {
 
 export const PRODUCT_IMAGE = {
   // Gap between offer badge and product image (2x)
-  GAP_FROM_BADGE: 10,
+  GAP_FROM_BADGE: 5,
 };
 
 // =============================================================================
