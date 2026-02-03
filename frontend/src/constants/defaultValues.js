@@ -68,22 +68,24 @@ export const INITIAL_BANNER_STATE = {
 
   // CTA button (required)
   ctaButton: {
-    text: '',
+    text: 'SHOP NOW', // Default CTA text
     textColor: DEFAULT_COLORS.TEXT_WHITE,
     bgColor: '', // No default - user must select
   },
 
-  // T&C text (optional)
+  // T&C text (optional, toggleable)
   tcText: {
-    text: '',
+    enabled: true, // Toggle to show/hide T&C on banner
+    text: '*T&C Apply', // Default T&C text
     color: DEFAULT_COLORS.TEXT_BLACK,
   },
 
-  // Offer badge (optional)
+  // Offer badge (optional, toggleable)
   offerBadge: {
-    text: '',
+    enabled: true, // Toggle to show/hide badge on banner
+    text: 'Free Delivery', // Default badge text
     textColor: DEFAULT_COLORS.TEXT_WHITE,
-    bgColor: '', // Required if text is present
+    bgColor: '', // Required if enabled
   },
 
   // Product image (required)

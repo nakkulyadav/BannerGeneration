@@ -55,12 +55,14 @@ export async function generateBanner(canvasElement, bannerState) {
       addCTAButton(canvas, bannerState.ctaButton, layout.cta);
     }
 
-    if (bannerState.tcText.text) {
+    // Only render T&C if enabled AND has text
+    if (bannerState.tcText.enabled && bannerState.tcText.text) {
       addTCText(canvas, bannerState.tcText, layout.tcText);
     }
 
     // 3. Add right section elements
-    if (bannerState.offerBadge.text && bannerState.offerBadge.bgColor) {
+    // Only render offer badge if enabled AND has text AND bgColor
+    if (bannerState.offerBadge.enabled && bannerState.offerBadge.text && bannerState.offerBadge.bgColor) {
       addOfferBadge(canvas, bannerState.offerBadge, bannerState.background.edgeType);
     }
 

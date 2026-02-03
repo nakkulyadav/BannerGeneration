@@ -2,7 +2,10 @@
  * CTA Button Section Component
  *
  * Call-to-action button text and color configuration.
- * Both text and background color are required.
+ * Features:
+ * - Default text "SHOP NOW" that users can customize
+ * - Both text and background color are required
+ * - No toggle option (CTA button always appears on banner)
  */
 
 import { useCallback } from 'react';
@@ -64,11 +67,11 @@ function CTAButtonSection({ ctaButton, onUpdate }) {
           type="text"
           value={ctaButton.text}
           onChange={handleTextChange}
-          placeholder="e.g., ORDER NOW, SHOP NOW, BUY NOW"
+          placeholder="e.g., ORDER NOW, BUY NOW"
           className="w-full px-3 py-2.5 text-sm bg-[#151515] border border-[#3a3a3a] text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none transition-shadow placeholder-gray-500"
         />
         <p className="text-xs text-gray-500">
-          Renders at 20px Bold. Button has 12px horizontal and 8px vertical padding.
+          Default: "SHOP NOW". Renders at 20px Bold with 12px/8px padding.
         </p>
       </div>
 

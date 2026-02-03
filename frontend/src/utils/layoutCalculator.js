@@ -36,7 +36,8 @@ export function calculateLayout(bannerState) {
     leftElements.push({ type: 'cta', height: estimateCTAHeight() });
   }
 
-  if (bannerState.tcText.text) {
+  // Only include T&C if enabled AND has text
+  if (bannerState.tcText.enabled && bannerState.tcText.text) {
     leftElements.push({ type: 'tcText', height: TEXT.TC.FONT_SIZE * 1.2 });
   }
 
@@ -66,7 +67,8 @@ export function calculateLayout(bannerState) {
   });
 
   // Calculate product image position
-  const offerBadgeHeight = bannerState.offerBadge.text && bannerState.offerBadge.bgColor
+  // Only account for badge height if enabled AND has text AND bgColor
+  const offerBadgeHeight = bannerState.offerBadge.enabled && bannerState.offerBadge.text && bannerState.offerBadge.bgColor
     ? estimateOfferBadgeHeight(bannerState.offerBadge.text)
     : 0;
 

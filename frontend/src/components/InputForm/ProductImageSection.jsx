@@ -13,8 +13,9 @@ import { useImageValidation } from '../../hooks/useImageValidation';
  * @param {Object} props
  * @param {Object} props.productImage - Product image state
  * @param {function} props.onUpdate - Update handler
+ * @param {function} props.onAiSearch - Callback to open AI search panel for product images
  */
-function ProductImageSection({ productImage, onUpdate }) {
+function ProductImageSection({ productImage, onUpdate, onAiSearch }) {
   const [error, setError] = useState('');
   const { validateProductImage } = useImageValidation();
 
@@ -69,6 +70,18 @@ function ProductImageSection({ productImage, onUpdate }) {
         hint="Use transparent PNG for best results. Will be centered in the right section of the banner."
         error={error}
       />
+
+      {/* AI Search button — opens the search panel for product images */}
+      <button
+        type="button"
+        onClick={onAiSearch}
+        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white text-sm font-semibold rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/25 active:scale-[0.98]"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        AI SEARCH
+      </button>
 
       {/* Tips - dark mode styling */}
       <div className="bg-amber-900/20 border border-amber-800/30 rounded-lg p-3 transition-colors hover:bg-amber-900/30 hover:border-amber-700/40">

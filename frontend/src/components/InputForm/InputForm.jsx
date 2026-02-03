@@ -88,6 +88,7 @@ function InputForm({ bannerState, handlers }) {
         <BrandLogoSection
           brandLogo={bannerState.brandLogo}
           onUpdate={handlers.updateBrandLogo}
+          onAiSearch={() => handlers.openSearchPanel('logo')}
         />
       </SectionCard>
 
@@ -169,6 +170,7 @@ function InputForm({ bannerState, handlers }) {
           <ProductImageSection
             productImage={bannerState.productImage}
             onUpdate={handlers.updateProductImage}
+            onAiSearch={() => handlers.openSearchPanel('product')}
           />
         </div>
       </SectionCard>

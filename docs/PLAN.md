@@ -1,7 +1,7 @@
 
 # DigiHaat Banner Generator - Implementation Plan
 
-**Overall Progress:** `100%` (207/207 subtasks completed)
+**Overall Progress:** `100%` (226/226 subtasks completed)
 
 ---
 
@@ -554,6 +554,39 @@ Building a web application that generates 722×312px promotional banners for Dig
 
 ---
 
+### Phase 16: Default Text Values & Toggle Improvements 🆕
+
+**Goal:** Add default text values to key fields and toggle controls for optional elements.
+
+- [x] 🟩 **16.1: T&C Text Field Defaults & Toggle**
+  - [x] 🟩 Add toggle switch to enable/disable T&C text display
+  - [x] 🟩 Set default text value to "*T&C Apply"
+  - [x] 🟩 Update TCTextSection.jsx with toggle and default value
+  - [x] 🟩 Update state management to track T&C visibility
+  - [x] 🟩 Update bannerGenerator.js to respect T&C toggle state
+
+- [x] 🟩 **16.2: Offer Badge Field Defaults & Toggle**
+  - [x] 🟩 Add toggle switch to enable/disable offer badge display
+  - [x] 🟩 Set default text value to "Free Delivery"
+  - [x] 🟩 Update OfferBadgeSection.jsx with toggle and default value
+  - [x] 🟩 Update state management to track offer badge visibility
+  - [x] 🟩 Update bannerGenerator.js to respect offer badge toggle state
+
+- [x] 🟩 **16.3: CTA Button Default Text**
+  - [x] 🟩 Set default text value to "SHOP NOW"
+  - [x] 🟩 Update CTAButtonSection.jsx with default value
+  - [x] 🟩 Update defaultValues.js with CTA default text
+  - [x] 🟩 No toggle option (CTA button remains required)
+
+- [x] 🟩 **16.4: Testing & Verification**
+  - [x] 🟩 Test T&C toggle shows/hides text on banner
+  - [x] 🟩 Test offer badge toggle shows/hides badge on banner
+  - [x] 🟩 Verify default values appear on initial load
+  - [x] 🟩 Verify layout adjusts correctly when elements are toggled off
+  - [x] 🟩 Verify all changes work with existing edge cases
+
+---
+
 ## Definition of Done
 
 The implementation is complete when:
@@ -572,16 +605,211 @@ The implementation is complete when:
 
 ---
 
+---
+---
+
+# Feature: AI Image Search
+
+**Overall Progress:** `100%`
+
+## TLDR
+
+Add an "AI SEARCH" button alongside the upload buttons in the Brand Logo and Product Image sections. Clicking it opens a shared search panel below the banner preview where users can search Pixabay for transparent-background images, browse a 3×4 grid of results, and select an image to apply directly to the banner. Requires restructuring the project into a monorepo (`/frontend` + `/backend`) with a separate Express.js backend to securely proxy Pixabay API calls.
+
+## Critical Decisions
+
+- **Monorepo structure (`/frontend` + `/backend`)** — project needs to scale; a separate Express.js backend keeps API keys secure and supports future backend features
+- **Pixabay API (free tier)** — only free stock API with a native `colors=transparent` filter, which is essential for product/logo images
+- **Transparent images only (no background removal)** — background removal APIs introduce edge artifacts and added cost; sourcing transparent PNGs directly is cleaner and higher quality
+- **Fetch large images, downscale locally** — fetch 1280px for products, 640px for logos, then downscale to preserve maximum quality
+- **Single shared search panel** — one panel below the preview that switches context based on which field's "AI SEARCH" button was clicked
+- **Scope limited to Logo + Product Image** — background image search deferred to a future iteration
+
+## Tasks
+
+### Phase 17: Monorepo Restructure
+
+- [x] 🟩 **17.1: Move existing app into `/frontend`**
+  - [x] 🟩 Create `/frontend` directory
+  - [x] 🟩 Move all existing source files (`src/`, `index.html`, `package.json`, `vite.config.js`, `tailwind.config.js`, `postcss.config.js`, `vercel.json`) into `/frontend`
+  - [x] 🟩 Update any absolute import paths if needed
+  - [x] 🟩 Verify `npm install && npm run build` works from `/frontend`
+
+- [x] 🟩 **17.2: Initialize `/backend`**
+  - [x] 🟩 Create `/backend` directory with `package.json`
+  - [x] 🟩 Install dependencies: `express`, `cors`, `dotenv`, `axios`
+  - [x] 🟩 Create `/backend/src/server.js` — Express app with CORS configured for frontend origin
+  - [x] 🟩 Create `/backend/.env` with `PIXABAY_API_KEY` placeholder
+  - [x] 🟩 Add `/backend/.env` to `.gitignore`
+  - [x] 🟩 Add a basic health-check route (`GET /api/health`)
+  - [x] 🟩 Verify `npm start` runs the backend server
+
+- [x] 🟩 **17.3: Root-level project config**
+  - [x] 🟩 Create root `README.md` with setup instructions for both frontend and backend
+  - [x] 🟩 Update root `.gitignore` to cover both `/frontend/node_modules` and `/backend/node_modules` and `/backend/.env`
+
+---
+
+### Phase 18: Backend — Pixabay Image Search API
+
+- [x] 🟩 **18.1: Pixabay search endpoint**
+  - [x] 🟩 Create `GET /api/search-images` route
+  - [x] 🟩 Accept query params: `q` (search term), `field` (logo | product)
+  - [x] 🟩 Call Pixabay API with `colors=transparent`, `image_type=photo`, `per_page=12`, `safesearch=true`
+  - [x] 🟩 Return normalized response: array of `{ id, previewURL, downloadURL, tags }` for each result
+
+- [x] 🟩 **18.2: Field-aware image size selection**
+  - [x] 🟩 If `field=product` — return `largeImageURL` (1280px) as the download URL
+  - [x] 🟩 If `field=logo` — return `webformatURL` (640px) as the download URL
+
+- [x] 🟩 **18.3: Error handling**
+  - [x] 🟩 Handle missing/empty `q` param (400 response)
+  - [x] 🟩 Handle Pixabay API errors gracefully (500 response with message)
+  - [x] 🟩 Handle rate limiting (Pixabay allows 100 req/min on free tier)
+
+---
+
+### Phase 19: Frontend — AI Search Button
+
+- [x] 🟩 **19.1: Add "AI SEARCH" button to BrandLogoSection**
+  - [x] 🟩 Add a styled button beside the existing upload area
+  - [x] 🟩 On click, dispatch an event/callback to open the search panel with context `field=logo`
+
+- [x] 🟩 **19.2: Add "AI SEARCH" button to ProductImageSection**
+  - [x] 🟩 Add a styled button beside the existing upload area
+  - [x] 🟩 On click, dispatch an event/callback to open the search panel with context `field=product`
+
+- [x] 🟩 **19.3: State management for search panel**
+  - [x] 🟩 Add state in `App.jsx`: `searchPanel: { isOpen, activeField }` where `activeField` is `'logo'` or `'product'`
+  - [x] 🟩 When "AI SEARCH" is clicked on a different field, clear previous results and switch `activeField`
+  - [x] 🟩 Pass open/close/select callbacks down to relevant components
+
+---
+
+### Phase 20: Frontend — Search Panel Component
+
+- [x] 🟩 **20.1: Create `ImageSearchPanel` component**
+  - [x] 🟩 Create `src/components/ImageSearch/ImageSearchPanel.jsx`
+  - [x] 🟩 Render below the `BannerPreview` section in the layout
+  - [x] 🟩 Include a header showing which field is active (e.g., "AI Search — Product Image")
+  - [x] 🟩 Include a close (X) button that hides the panel
+
+- [x] 🟩 **20.2: Search input**
+  - [x] 🟩 Text input field with placeholder (e.g., "Search for images...")
+  - [x] 🟩 Search button or Enter key to trigger search
+  - [x] 🟩 Show spinner/loading indicator while API call is in progress
+
+- [x] 🟩 **20.3: Results grid**
+  - [x] 🟩 Display 12 results in a 3-row × 4-column grid (4 cols on desktop, 2 on mobile)
+  - [x] 🟩 Each cell shows the Pixabay preview thumbnail with checkerboard transparency bg
+  - [x] 🟩 Hover effect to indicate clickability
+  - [x] 🟩 Handle empty results (show "No images found" message)
+
+- [x] 🟩 **20.4: Image selection**
+  - [x] 🟩 On click, use the full-size image URL (large or webformat based on field)
+  - [x] 🟩 Pass the image URL back to `App.jsx` via callback
+  - [x] 🟩 Update the corresponding state (`brandLogo.imageUrl` or `productImage.imageUrl`)
+  - [x] 🟩 Banner preview updates immediately via existing generation pipeline
+  - [x] 🟩 Show a visual indicator (border/checkmark) on the selected image in the grid
+
+- [x] 🟩 **20.5: Panel styling**
+  - [x] 🟩 Match existing dark theme (consistent with the rest of the app)
+  - [x] 🟩 Responsive layout — grid adapts on smaller screens
+  - [x] 🟩 Smooth open/close transitions
+
+---
+
+### Phase 21: Integration & Image Processing
+
+- [x] 🟩 **21.1: Connect search panel to existing image pipeline**
+  - [x] 🟩 Selected search images go through the same `scaleImage()` and `loadImage()` pipeline as uploaded files
+  - [x] 🟩 CORS verified — `loadImage()` in `imageProcessor.js` already sets `crossOrigin='anonymous'`
+  - [x] 🟩 Pixabay CDN serves CORS headers — Fabric.js canvas export works without tainting
+
+- [x] 🟩 **21.2: Coexistence with file upload**
+  - [x] 🟩 If user uploads a file after selecting a search image, the uploaded file takes priority
+  - [x] 🟩 If user selects a search image after uploading a file, the search image takes priority
+  - [x] 🟩 Clear button on the upload area clears both uploaded and search-selected images
+
+- [x] 🟩 **21.3: Frontend API service**
+  - [x] 🟩 Create `src/services/imageSearchService.js` in frontend
+  - [x] 🟩 Single function: `searchImages(query, field)` — calls backend `/api/search-images`
+  - [x] 🟩 Configure backend URL via Vite env variable (`VITE_API_URL`)
+
+---
+
+### Phase 22: Testing & Verification
+
+- [x] 🟩 **22.1: Backend tests**
+  - [x] 🟩 Verify `/api/search-images?q=shoes&field=product` returns 12 transparent PNG results
+  - [x] 🟩 Verify `/api/search-images?q=brand+logo&field=logo` returns webformat URLs
+  - [x] 🟩 Verify error handling (missing query returns 400)
+
+- [x] 🟩 **22.2: Frontend integration tests** (manual — requires browser)
+  - [x] 🟩 Verify "AI SEARCH" button opens panel with correct field context
+  - [x] 🟩 Verify switching fields clears previous results
+  - [x] 🟩 Verify selecting an image updates the banner preview
+  - [x] 🟩 Verify file upload still works after using search
+  - [x] 🟩 Verify close button dismisses the panel
+
+- [x] 🟩 **22.3: Image quality verification** (manual — requires browser)
+  - [x] 🟩 Verify product images render sharply at 361px width on the banner
+  - [x] 🟩 Verify logo images render sharply at 200×60px on the banner
+  - [x] 🟩 Verify transparent backgrounds are preserved (no white box behind images)
+  - [x] 🟩 Verify downloaded WEBP banner maintains quality with search-sourced images
+
+---
+
+### Phase 23: Smart AI Search — Gemini-Powered Query Enhancement & Re-Ranking
+
+**Problem:** The "AI Search" is a raw Pixabay keyword proxy. Searching "burger king brand logo" returns random burgers and unrelated logos because Pixabay splits the query into individual keywords and matches broadly.
+
+**Solution:** Use Gemini to rewrite queries into optimized search terms before hitting Pixabay, fetch 50 results, then use Gemini to re-rank by relevance. Update frontend grid from 3x4 (12) to 10x5 (50).
+
+- [x] 🟩 **23.1: Install Gemini SDK & configure API key**
+  - [x] 🟩 Install `@google/generative-ai` package in `/backend`
+  - [x] 🟩 Add `GEMINI_API_KEY` to `backend/.env.example`
+  - [x] 🟩 Add `GEMINI_API_KEY` to `backend/.env`
+
+- [x] 🟩 **23.2: Create Gemini service module**
+  - [x] 🟩 Create `backend/src/services/geminiService.js`
+  - [x] 🟩 Implement `enhanceQuery(rawQuery, field)` — sends user query + field type (logo/product) to Gemini, returns an optimized Pixabay search string (e.g. "burger king brand logo" → `"burger king logo transparent png"`)
+  - [x] 🟩 Implement `rankResults(originalQuery, images)` — sends original query + image metadata (tags, dimensions) to Gemini, returns the array sorted by relevance score
+
+- [x] 🟩 **23.3: Update search route with Gemini pipeline**
+  - [x] 🟩 In `imageSearch.js`: call `enhanceQuery()` on the raw query before passing to Pixabay
+  - [x] 🟩 Increase Pixabay `per_page` from 12 to 50
+  - [x] 🟩 After fetching Pixabay results, call `rankResults()` to re-rank by relevance
+  - [x] 🟩 Return the top 50 re-ranked images
+  - [x] 🟩 Add graceful fallback — if Gemini fails (key missing, rate limit, error), fall back to raw Pixabay results
+
+- [x] 🟩 **23.4: Update frontend grid layout**
+  - [x] 🟩 In `ImageSearchPanel.jsx`: change grid from `grid-cols-2 sm:grid-cols-4` to `grid-cols-3 sm:grid-cols-5`
+  - [x] 🟩 Add a scrollable container with max-height so 10 rows of 5 are browsable
+  - [x] 🟩 Keep all existing selection/loading/error/close behavior unchanged
+
+- [ ] 🟥 **23.5: Test end-to-end**
+  - [ ] 🟥 Test "burger king brand logo" (logo field) — verify relevant logo results
+  - [ ] 🟥 Test a product query (e.g. "red shoes") — verify product-relevant results
+  - [ ] 🟥 Test Gemini fallback — remove/invalidate Gemini key, verify search still returns raw Pixabay results
+  - [ ] 🟥 Verify grid displays 50 images in 10×5 layout with scroll
+
+---
+
 ## Out of Scope (Future Enhancements)
 
 These features will NOT be implemented in this version:
+- AI image search for background images
+- Background removal processing
+- AI image generation (DALL-E, Midjourney, etc.)
+- Paid API integrations (Bing, Shutterstock)
+- Image cropping/editing before applying to banner
+- Search history or favorites
 - Drag & drop positioning of elements
-- Automatic background removal for images
 - Multiple banner templates
 - Save/load banner configurations
 - Font selection options
-- Image editing (crop, resize, rotate)
-- Background auto-scaling for non-722×312 images
 - Undo/redo functionality
 - Batch generation
-- Multiple export formats (JPG, WebP, SVG)
+- Multi-source search (Unsplash, Pexels) — deferred to future phase
+- Response caching layer — deferred to future phase

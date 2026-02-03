@@ -10,6 +10,7 @@ import { Toaster } from 'react-hot-toast';
 import { INITIAL_BANNER_STATE, REQUIRED_FIELDS } from './constants/defaultValues';
 import InputForm from './components/InputForm/InputForm';
 import BannerPreview from './components/BannerPreview/BannerPreview';
+import ImageSearchPanel from './components/ImageSearch/ImageSearchPanel';
 
 function App() {
   // ==========================================================================
@@ -17,6 +18,12 @@ function App() {
   // ==========================================================================
 
   const [bannerState, setBannerState] = useState(INITIAL_BANNER_STATE);
+
+  // Search panel state — controls the AI image search panel below the preview
+  const [searchPanel, setSearchPanel] = useState({
+    isOpen: false,
+    activeField: null, // 'logo' | 'product'
+  });
 
   // ==========================================================================
   // STATE UPDATE HANDLERS
@@ -129,6 +136,46 @@ function App() {
   }, []);
 
   // ==========================================================================
+  // SEARCH PANEL HANDLERS
+  // ==========================================================================
+
+  /**
+   * Open the AI search panel for a specific field.
+   * If the panel is already open for a different field, switch context and clear results.
+   */
+  const openSearchPanel = useCallback((field) => {
+    setSearchPanel({ isOpen: true, activeField: field });
+  }, []);
+
+  /**
+   * Close the AI search panel
+   */
+  const closeSearchPanel = useCallback(() => {
+    setSearchPanel({ isOpen: false, activeField: null });
+  }, []);
+
+  /**
+   * Handle image selection from the search panel.
+   * Applies the selected image URL to the corresponding field.
+   */
+  const handleSearchSelect = useCallback((imageUrl) => {
+    setSearchPanel((prev) => {
+      if (prev.activeField === 'logo') {
+        setBannerState((s) => ({
+          ...s,
+          brandLogo: { image: null, imageUrl },
+        }));
+      } else if (prev.activeField === 'product') {
+        setBannerState((s) => ({
+          ...s,
+          productImage: { image: null, imageUrl },
+        }));
+      }
+      return prev;
+    });
+  }, []);
+
+  // ==========================================================================
   // VALIDATION
   // ==========================================================================
 
@@ -163,6 +210,7 @@ function App() {
     updateTcText,
     updateOfferBadge,
     updateProductImage,
+    openSearchPanel,
   };
 
   // ==========================================================================
@@ -263,16 +311,27 @@ function App() {
           </div>
 
           {/* ================================================================
-              Right Panel: Preview
+              Right Panel: Preview + Search Panel
               - Full width on mobile, stacked below form
               - 1/2 width on desktop (lg+), fixed position
-              - Stays visible, no scrolling
+              - Scrollable to accommodate search panel below preview
               ================================================================ */}
-          <div className="w-full lg:w-1/2 flex-shrink-0">
+          <div className="w-full lg:w-1/2 flex-shrink-0 overflow-y-auto scrollbar-thin">
             <BannerPreview
               bannerState={bannerState}
               isValid={isFormValid()}
             />
+
+            {/* AI Image Search Panel — shown below the preview */}
+            {searchPanel.isOpen && (
+              <div className="mt-4">
+                <ImageSearchPanel
+                  activeField={searchPanel.activeField}
+                  onSelect={handleSearchSelect}
+                  onClose={closeSearchPanel}
+                />
+              </div>
+            )}
           </div>
         </div>
       </main>
