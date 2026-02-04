@@ -58,11 +58,17 @@ export const LOGO = {
 // =============================================================================
 // TEXT SPECIFICATIONS
 // =============================================================================
+//
+// NOTE: Font family and weight values below are DEFAULT values only.
+// Users can customize font and weight for each text field through the UI.
+// These values are used as fallbacks and for initial state.
+//
+// =============================================================================
 
 export const TEXT = {
   HEADING: {
-    FONT_FAMILY: 'Inter',
-    FONT_WEIGHT: 1000, 
+    FONT_FAMILY: 'Inter', // Default font (user-selectable)
+    FONT_WEIGHT: 900, // Black weight (user-selectable, capped at 900 for consistency)
     FONT_SIZE: 28,
     MAX_CHARS: 40,
     MAX_WIDTH: 320, // Fills left section (361 - 40 margin ≈ 320)
@@ -73,18 +79,18 @@ export const TEXT = {
 
   // Subheading configs for different modes
   SUBHEADING_LEFT: {
-    FONT_FAMILY: 'Inter',
-    FONT_WEIGHT: 500, // Medium
+    FONT_FAMILY: 'Inter', // Default font (user-selectable)
+    FONT_WEIGHT: 500, // Medium (user-selectable)
     FONT_SIZE: 28,
   },
   SUBHEADING_RIGHT: {
-    FONT_FAMILY: 'Inter',
-    FONT_WEIGHT: 700, // Bold
+    FONT_FAMILY: 'Inter', // Default font (user-selectable)
+    FONT_WEIGHT: 700, // Bold (user-selectable)
     FONT_SIZE: 36,
   },
   SUBHEADING_SINGLE: {
-    FONT_FAMILY: 'Inter',
-    FONT_WEIGHT: 800, 
+    FONT_FAMILY: 'Inter', // Default font (user-selectable)
+    FONT_WEIGHT: 800, // Extra Bold (user-selectable)
     FONT_SIZE: 28,
   },
   // Common subheading settings
@@ -93,8 +99,8 @@ export const TEXT = {
   },
 
   CTA: {
-    FONT_FAMILY: 'Inter',
-    FONT_WEIGHT: 700, // Bold
+    FONT_FAMILY: 'Inter', // Default font (user-selectable)
+    FONT_WEIGHT: 700, // Bold (user-selectable)
     FONT_SIZE: 20,
     PADDING: {
       HORIZONTAL: 12,
@@ -104,15 +110,15 @@ export const TEXT = {
   },
 
   TC: {
-    FONT_FAMILY: 'Inter',
-    FONT_WEIGHT: 400, // Regular
+    FONT_FAMILY: 'Inter', // Default font (user-selectable)
+    FONT_WEIGHT: 400, // Regular (user-selectable)
     FONT_SIZE: 12, // Increased for better visibility
     LETTER_SPACING: 0,
   },
 
   OFFER_BADGE: {
-    FONT_FAMILY: 'Inter',
-    FONT_WEIGHT: 500, // Medium
+    FONT_FAMILY: 'Inter', // Default font (user-selectable)
+    FONT_WEIGHT: 500, // Medium (user-selectable)
     FONT_SIZE: 20,
     PADDING: {
       HORIZONTAL: 12,

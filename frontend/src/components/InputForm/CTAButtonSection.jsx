@@ -8,8 +8,11 @@
  * - No toggle option (CTA button always appears on banner)
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { ColorPicker } from '../shared';
+import FontSelector from '../shared/FontSelector';
+import WeightSelector from '../shared/WeightSelector';
+import { getClosestWeight } from '../../constants/fontConfig';
 
 /**
  * @param {Object} props
@@ -17,6 +20,31 @@ import { ColorPicker } from '../shared';
  * @param {function} props.onUpdate - Update handler
  */
 function CTAButtonSection({ ctaButton, onUpdate }) {
+  const [autoOpenWeight, setAutoOpenWeight] = useState(false);
+
+  /**
+   * Handle font change with closest weight fallback
+   */
+  const handleFontChange = useCallback(
+    (fontFamily) => {
+      const closestWeight = getClosestWeight(fontFamily, ctaButton.fontWeight);
+      onUpdate({ fontFamily, fontWeight: closestWeight });
+      setAutoOpenWeight(true);
+      setTimeout(() => setAutoOpenWeight(false), 200);
+    },
+    [ctaButton.fontWeight, onUpdate]
+  );
+
+  /**
+   * Handle weight change
+   */
+  const handleWeightChange = useCallback(
+    (fontWeight) => {
+      onUpdate({ fontWeight });
+    },
+    [onUpdate]
+  );
+
   /**
    * Handle text input
    */
@@ -55,6 +83,22 @@ function CTAButtonSection({ ctaButton, onUpdate }) {
       <div className="flex items-center gap-2">
         <span className="text-xs font-medium text-red-400 uppercase tracking-wide">Required</span>
         <span className="flex-1 h-px bg-[#2a2a2a]"></span>
+      </div>
+
+      {/* Font and Weight selectors */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <FontSelector
+          value={ctaButton.fontFamily}
+          onChange={handleFontChange}
+          label="Font:"
+        />
+        <WeightSelector
+          fontFamily={ctaButton.fontFamily}
+          value={ctaButton.fontWeight}
+          onChange={handleWeightChange}
+          label="Weight:"
+          autoOpen={autoOpenWeight}
+        />
       </div>
 
       {/* CTA text input - dark mode */}

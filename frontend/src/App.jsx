@@ -5,25 +5,97 @@
  * the responsive layout (desktop: side-by-side, mobile: stacked)
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { INITIAL_BANNER_STATE, REQUIRED_FIELDS } from './constants/defaultValues';
 import InputForm from './components/InputForm/InputForm';
 import BannerPreview from './components/BannerPreview/BannerPreview';
 import ImageSearchPanel from './components/ImageSearch/ImageSearchPanel';
+import { loadFontSettings, saveFontSettings, mergeFontSettings, extractFontSettings } from './utils/fontStorage';
+import { AVAILABLE_FONTS, getAvailableWeights } from './constants/fontConfig';
 
 function App() {
   // ==========================================================================
   // STATE MANAGEMENT
   // ==========================================================================
 
-  const [bannerState, setBannerState] = useState(INITIAL_BANNER_STATE);
+  // Initialize state with localStorage-persisted font settings (if available)
+  const [bannerState, setBannerState] = useState(() => {
+    // Load saved font settings
+    const loadedSettings = loadFontSettings();
+
+    // If no saved settings, use initial state as-is
+    if (!loadedSettings) {
+      return INITIAL_BANNER_STATE;
+    }
+
+    // Validation functions for font/weight
+    const isValidFont = (fontFamily) => {
+      return AVAILABLE_FONTS.some((font) => font.value === fontFamily);
+    };
+
+    const isValidWeight = (fontFamily, weight) => {
+      const availableWeights = getAvailableWeights(fontFamily);
+      return availableWeights.includes(weight);
+    };
+
+    // Merge loaded settings with initial state (with validation)
+    return mergeFontSettings(INITIAL_BANNER_STATE, loadedSettings, {
+      isValidFont,
+      isValidWeight,
+    });
+  });
 
   // Search panel state — controls the AI image search panel below the preview
   const [searchPanel, setSearchPanel] = useState({
     isOpen: false,
     activeField: null, // 'logo' | 'product'
   });
+
+  // ==========================================================================
+  // LOCALSTORAGE PERSISTENCE
+  // ==========================================================================
+
+  // Ref to hold debounce timer for font settings save
+  const saveTimerRef = useRef(null);
+
+  /**
+   * Save font settings to localStorage whenever they change
+   * Debounced to 300ms to avoid excessive writes
+   */
+  useEffect(() => {
+    // Clear any pending save timer
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    // Set new timer to save after 300ms of inactivity
+    saveTimerRef.current = setTimeout(() => {
+      const fontSettings = extractFontSettings(bannerState);
+      saveFontSettings(fontSettings);
+    }, 300);
+
+    // Cleanup function - clear timer on unmount
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, [
+    // Only trigger when font/weight values change (not other state changes)
+    bannerState.heading?.fontFamily,
+    bannerState.heading?.fontWeight,
+    bannerState.subheading?.fontFamily,
+    bannerState.subheading?.weightLeft,
+    bannerState.subheading?.weightRight,
+    bannerState.subheading?.weightSingle,
+    bannerState.ctaButton?.fontFamily,
+    bannerState.ctaButton?.fontWeight,
+    bannerState.tcText?.fontFamily,
+    bannerState.tcText?.fontWeight,
+    bannerState.offerBadge?.fontFamily,
+    bannerState.offerBadge?.fontWeight,
+  ]);
 
   // ==========================================================================
   // STATE UPDATE HANDLERS

@@ -3,6 +3,8 @@
  * Initial state and color presets
  */
 
+import { TEXT } from './bannerConfig.js';
+
 // =============================================================================
 // DEFAULT COLORS
 // =============================================================================
@@ -49,6 +51,8 @@ export const INITIAL_BANNER_STATE = {
   heading: {
     text: '',
     color: DEFAULT_COLORS.TEXT_BLACK,
+    fontFamily: TEXT.HEADING.FONT_FAMILY, // User-selectable font
+    fontWeight: TEXT.HEADING.FONT_WEIGHT, // User-selectable weight
   },
 
   // Product subheading (optional, can be split)
@@ -64,6 +68,10 @@ export const INITIAL_BANNER_STATE = {
       hasRupee: false,
     },
     color: DEFAULT_COLORS.TEXT_BLACK,
+    fontFamily: TEXT.SUBHEADING_LEFT.FONT_FAMILY, // Shared font for all subheading modes
+    weightLeft: TEXT.SUBHEADING_LEFT.FONT_WEIGHT, // Weight for split left
+    weightRight: TEXT.SUBHEADING_RIGHT.FONT_WEIGHT, // Weight for split right
+    weightSingle: TEXT.SUBHEADING_SINGLE.FONT_WEIGHT, // Weight for non-split mode
   },
 
   // CTA button (required)
@@ -71,6 +79,8 @@ export const INITIAL_BANNER_STATE = {
     text: 'SHOP NOW', // Default CTA text
     textColor: DEFAULT_COLORS.TEXT_WHITE,
     bgColor: '', // No default - user must select
+    fontFamily: TEXT.CTA.FONT_FAMILY, // User-selectable font
+    fontWeight: TEXT.CTA.FONT_WEIGHT, // User-selectable weight
   },
 
   // T&C text (optional, toggleable)
@@ -78,6 +88,8 @@ export const INITIAL_BANNER_STATE = {
     enabled: true, // Toggle to show/hide T&C on banner
     text: '*T&C Apply', // Default T&C text
     color: DEFAULT_COLORS.TEXT_BLACK,
+    fontFamily: TEXT.TC.FONT_FAMILY, // User-selectable font
+    fontWeight: TEXT.TC.FONT_WEIGHT, // User-selectable weight
   },
 
   // Offer badge (optional, toggleable)
@@ -86,6 +98,8 @@ export const INITIAL_BANNER_STATE = {
     text: 'Free Delivery', // Default badge text
     textColor: DEFAULT_COLORS.TEXT_WHITE,
     bgColor: '', // Required if enabled
+    fontFamily: TEXT.OFFER_BADGE.FONT_FAMILY, // User-selectable font
+    fontWeight: TEXT.OFFER_BADGE.FONT_WEIGHT, // User-selectable weight
   },
 
   // Product image (required)

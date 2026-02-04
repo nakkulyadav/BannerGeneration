@@ -2,19 +2,24 @@
  * AI Image Search Panel
  *
  * Shared search panel rendered below the banner preview.
- * Allows users to search Pixabay for transparent-background images
+ * Allows users to search Google Images for transparent-background images
  * and select one to apply to the active field (logo or product image).
  *
  * Features:
  * - Search input with Enter key / button trigger
  * - 10×5 scrollable grid of results (50 images)
- * - Loading spinner while fetching
  * - Visual indicator on selected image
+ * - Two action buttons after selection:
+ *   1. "Apply to Banner" - apply image directly
+ *   2. "Remove Background" - process via remove.bg API, then apply
+ * - Loading spinner during search and background removal
+ * - Toast notifications for success/error states
  * - Close button to dismiss
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { searchImages } from '../../services/imageSearchService';
+import toast from 'react-hot-toast';
+import { searchImages, removeBackground } from '../../services/imageSearchService';
 
 /**
  * Field label map for display
@@ -35,8 +40,9 @@ function ImageSearchPanel({ activeField, onSelect, onClose }) {
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null); // Store the full image object
   const [hasSearched, setHasSearched] = useState(false);
+  const [isRemovingBg, setIsRemovingBg] = useState(false); // Track background removal loading state
 
   const inputRef = useRef(null);
 
@@ -47,8 +53,9 @@ function ImageSearchPanel({ activeField, onSelect, onClose }) {
     setQuery('');
     setResults([]);
     setError('');
-    setSelectedId(null);
+    setSelectedImage(null);
     setHasSearched(false);
+    setIsRemovingBg(false);
   }, [activeField]);
 
   /**
@@ -60,7 +67,7 @@ function ImageSearchPanel({ activeField, onSelect, onClose }) {
 
     setIsLoading(true);
     setError('');
-    setSelectedId(null);
+    setSelectedImage(null);
     setHasSearched(true);
 
     try {
@@ -88,15 +95,48 @@ function ImageSearchPanel({ activeField, onSelect, onClose }) {
   );
 
   /**
-   * Handle image selection — apply to banner
+   * Handle image selection — store selected image (don't apply yet)
    */
   const handleImageClick = useCallback(
     (image) => {
-      setSelectedId(image.id);
-      onSelect(image.downloadURL);
+      setSelectedImage(image);
     },
-    [onSelect]
+    []
   );
+
+  /**
+   * Apply the selected image directly to the banner
+   */
+  const handleApplyImage = useCallback(() => {
+    if (!selectedImage) return;
+    onSelect(selectedImage.downloadURL);
+    toast.success('Image applied to banner!');
+  }, [selectedImage, onSelect]);
+
+  /**
+   * Remove background from selected image, then apply to banner
+   */
+  const handleRemoveBackground = useCallback(async () => {
+    if (!selectedImage) return;
+
+    setIsRemovingBg(true);
+    try {
+      const result = await removeBackground(selectedImage.downloadURL);
+      onSelect(result.processedImageUrl);
+      toast.success('Background removed and applied!');
+    } catch (err) {
+      // Handle specific error codes
+      if (err.code === 'FREE_TIER_EXHAUSTED' || err.status === 402) {
+        toast.error('Background removal limit reached. Please try again later or upload images with transparent backgrounds.');
+      } else if (err.code === 'RATE_LIMIT_EXCEEDED' || err.status === 429) {
+        toast.error('Too many requests. Please wait a moment and try again.');
+      } else {
+        toast.error(err.message || 'Failed to remove background. Please try again.');
+      }
+    } finally {
+      setIsRemovingBg(false);
+    }
+  }, [selectedImage, onSelect]);
 
   return (
     <div className="bg-[#1a1a1a] rounded-xl border border-[#2a2a2a] shadow-lg overflow-hidden animate-fade-in">
@@ -193,7 +233,7 @@ function ImageSearchPanel({ activeField, onSelect, onClose }) {
                 type="button"
                 onClick={() => handleImageClick(image)}
                 className={`relative group aspect-square rounded-lg overflow-hidden border-2 transition-all duration-200 hover:scale-[1.03] ${
-                  selectedId === image.id
+                  selectedImage?.id === image.id
                     ? 'border-purple-500 ring-2 ring-purple-500/30'
                     : 'border-[#2a2a2a] hover:border-[#4a4a4a]'
                 }`}
@@ -214,7 +254,7 @@ function ImageSearchPanel({ activeField, onSelect, onClose }) {
                 />
 
                 {/* Selected checkmark overlay */}
-                {selectedId === image.id && (
+                {selectedImage?.id === image.id && (
                   <div className="absolute top-1.5 right-1.5 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center shadow-lg">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -249,6 +289,59 @@ function ImageSearchPanel({ activeField, onSelect, onClose }) {
             </svg>
             <p className="text-sm text-gray-400">Search for {FIELD_LABELS[activeField].toLowerCase()} images</p>
             <p className="text-xs text-gray-500 mt-1">Results will appear here</p>
+          </div>
+        )}
+
+        {/* Action buttons — shown when an image is selected */}
+        {selectedImage && !isLoading && (
+          <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-[#2a2a2a]">
+            {/* Apply directly */}
+            <button
+              type="button"
+              onClick={handleApplyImage}
+              disabled={isRemovingBg}
+              className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/25 active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Apply to Banner
+            </button>
+
+            {/* Remove background first */}
+            <button
+              type="button"
+              onClick={handleRemoveBackground}
+              disabled={isRemovingBg}
+              className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-green-500/25 active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              {isRemovingBg ? (
+                <>
+                  <svg
+                    className="w-4 h-4 animate-spin"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Removing Background...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  Remove Background
+                </>
+              )}
+            </button>
           </div>
         )}
 

@@ -8,8 +8,11 @@
  * - If enabled and text provided, background color becomes required.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { ColorPicker, ToggleSwitch } from '../shared';
+import FontSelector from '../shared/FontSelector';
+import WeightSelector from '../shared/WeightSelector';
+import { getClosestWeight } from '../../constants/fontConfig';
 
 /**
  * @param {Object} props
@@ -17,6 +20,31 @@ import { ColorPicker, ToggleSwitch } from '../shared';
  * @param {function} props.onUpdate - Update handler
  */
 function OfferBadgeSection({ offerBadge, onUpdate }) {
+  const [autoOpenWeight, setAutoOpenWeight] = useState(false);
+
+  /**
+   * Handle font change with closest weight fallback
+   */
+  const handleFontChange = useCallback(
+    (fontFamily) => {
+      const closestWeight = getClosestWeight(fontFamily, offerBadge.fontWeight);
+      onUpdate({ fontFamily, fontWeight: closestWeight });
+      setAutoOpenWeight(true);
+      setTimeout(() => setAutoOpenWeight(false), 200);
+    },
+    [offerBadge.fontWeight, onUpdate]
+  );
+
+  /**
+   * Handle weight change
+   */
+  const handleWeightChange = useCallback(
+    (fontWeight) => {
+      onUpdate({ fontWeight });
+    },
+    [onUpdate]
+  );
+
   /**
    * Handle toggle switch for enabling/disabling badge display
    */
@@ -83,6 +111,22 @@ function OfferBadgeSection({ offerBadge, onUpdate }) {
       {/* Content only shown when enabled */}
       {offerBadge.enabled && (
         <div className="space-y-4 animate-fade-in">
+          {/* Font and Weight selectors */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <FontSelector
+              value={offerBadge.fontFamily}
+              onChange={handleFontChange}
+              label="Font:"
+            />
+            <WeightSelector
+              fontFamily={offerBadge.fontFamily}
+              value={offerBadge.fontWeight}
+              onChange={handleWeightChange}
+              label="Weight:"
+              autoOpen={autoOpenWeight}
+            />
+          </div>
+
           {/* Badge text input - dark mode */}
           <div className="space-y-2">
             <label className="block text-xs font-medium text-gray-400">

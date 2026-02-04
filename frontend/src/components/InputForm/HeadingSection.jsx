@@ -1,19 +1,25 @@
 /**
  * Heading Section Component
  *
- * Product heading input with 40 character limit and color picker.
+ * Product heading input with 40 character limit, font/weight selectors, and color picker.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { ColorPicker } from '../shared';
+import FontSelector from '../shared/FontSelector';
+import WeightSelector from '../shared/WeightSelector';
 import { TEXT } from '../../constants/bannerConfig';
+import { getClosestWeight } from '../../constants/fontConfig';
 
 /**
  * @param {Object} props
- * @param {Object} props.heading - Heading state
+ * @param {Object} props.heading - Heading state (text, color, fontFamily, fontWeight)
  * @param {function} props.onUpdate - Update handler
  */
 function HeadingSection({ heading, onUpdate }) {
+  // Track if weight selector should auto-open (after font change)
+  const [autoOpenWeight, setAutoOpenWeight] = useState(false);
+
   /**
    * Handle text input (enforce 40 char limit)
    */
@@ -38,6 +44,37 @@ function HeadingSection({ heading, onUpdate }) {
     [onUpdate]
   );
 
+  /**
+   * Handle font family change
+   * Automatically adjusts weight to closest available if current weight is unavailable
+   */
+  const handleFontChange = useCallback(
+    (fontFamily) => {
+      const currentWeight = heading.fontWeight;
+      const closestWeight = getClosestWeight(fontFamily, currentWeight);
+
+      onUpdate({
+        fontFamily,
+        fontWeight: closestWeight,
+      });
+
+      // Auto-open weight selector to draw user attention
+      setAutoOpenWeight(true);
+      setTimeout(() => setAutoOpenWeight(false), 200);
+    },
+    [heading.fontWeight, onUpdate]
+  );
+
+  /**
+   * Handle font weight change
+   */
+  const handleWeightChange = useCallback(
+    (fontWeight) => {
+      onUpdate({ fontWeight });
+    },
+    [onUpdate]
+  );
+
   const charCount = heading.text.length;
   const isNearLimit = charCount >= TEXT.HEADING.MAX_CHARS - 5;
 
@@ -47,6 +84,22 @@ function HeadingSection({ heading, onUpdate }) {
       <div className="flex items-center gap-2">
         <span className="text-xs font-medium text-red-400 uppercase tracking-wide">Required</span>
         <span className="flex-1 h-px bg-[#2a2a2a]"></span>
+      </div>
+
+      {/* Font and Weight Selectors - Row layout (Option C) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <FontSelector
+          value={heading.fontFamily}
+          onChange={handleFontChange}
+          label="Font:"
+        />
+        <WeightSelector
+          fontFamily={heading.fontFamily}
+          value={heading.fontWeight}
+          onChange={handleWeightChange}
+          label="Weight:"
+          autoOpen={autoOpenWeight}
+        />
       </div>
 
       {/* Heading text input - dark mode */}
@@ -76,7 +129,7 @@ function HeadingSection({ heading, onUpdate }) {
         />
 
         <p className="text-xs text-gray-500">
-          Renders at 28px Semi-Bold. Max 2 lines, wraps at 320px width.
+          Renders at 28px with selected font and weight. Max 2 lines, wraps at 320px width.
         </p>
       </div>
 

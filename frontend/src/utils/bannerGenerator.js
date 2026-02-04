@@ -144,6 +144,7 @@ async function addLogo(canvas, brandLogo, position) {
 
 /**
  * Add product heading text
+ * Uses user-selected font family and weight from state
  */
 function addHeading(canvas, heading, position) {
   const text = new fabric.Textbox(heading.text, {
@@ -151,8 +152,9 @@ function addHeading(canvas, heading, position) {
     top: position.y,
     width: TEXT.HEADING.MAX_WIDTH,
     fontSize: TEXT.HEADING.FONT_SIZE,
-    fontFamily: TEXT.HEADING.FONT_FAMILY,
-    fontWeight: TEXT.HEADING.FONT_WEIGHT,
+    // Use font/weight from state (user-selectable), fallback to config defaults
+    fontFamily: heading.fontFamily || TEXT.HEADING.FONT_FAMILY,
+    fontWeight: heading.fontWeight || TEXT.HEADING.FONT_WEIGHT,
     fill: heading.color,
     textAlign: 'left',
     lineHeight: TEXT.HEADING.LINE_HEIGHT,
@@ -166,11 +168,14 @@ function addHeading(canvas, heading, position) {
 
 /**
  * Add subheading (single or split mode)
- * Uses separate font configs for left/right/single modes
+ * Uses user-selected font family and mode-specific weights from state
  */
 function addSubheading(canvas, subheading, position) {
+  // Get font family from state (shared across all modes), fallback to config
+  const fontFamily = subheading.fontFamily || TEXT.SUBHEADING_SINGLE.FONT_FAMILY;
+
   if (!subheading.isSplit) {
-    // Single mode - uses SUBHEADING_SINGLE config
+    // Single mode - uses weightSingle from state
     const displayText = formatSubheadingText(
       subheading.left.text,
       subheading.left.hasRupee
@@ -181,8 +186,8 @@ function addSubheading(canvas, subheading, position) {
         left: position.x,
         top: position.y,
         fontSize: TEXT.SUBHEADING_SINGLE.FONT_SIZE,
-        fontFamily: TEXT.SUBHEADING_SINGLE.FONT_FAMILY,
-        fontWeight: TEXT.SUBHEADING_SINGLE.FONT_WEIGHT,
+        fontFamily: fontFamily,
+        fontWeight: subheading.weightSingle || TEXT.SUBHEADING_SINGLE.FONT_WEIGHT,
         fill: subheading.color,
         selectable: false,
         evented: false,
@@ -191,10 +196,10 @@ function addSubheading(canvas, subheading, position) {
       canvas.add(text);
     }
   } else {
-    // Split mode - left and right parts with different configs
+    // Split mode - left and right parts with separate weights
     let currentX = position.x;
 
-    // Left part - uses SUBHEADING_LEFT config (Medium, 28px)
+    // Left part - uses weightLeft from state
     if (subheading.left.text.trim()) {
       const leftText = formatSubheadingText(
         subheading.left.text,
@@ -205,8 +210,8 @@ function addSubheading(canvas, subheading, position) {
         left: currentX,
         top: position.y,
         fontSize: TEXT.SUBHEADING_LEFT.FONT_SIZE,
-        fontFamily: TEXT.SUBHEADING_LEFT.FONT_FAMILY,
-        fontWeight: TEXT.SUBHEADING_LEFT.FONT_WEIGHT,
+        fontFamily: fontFamily,
+        fontWeight: subheading.weightLeft || TEXT.SUBHEADING_LEFT.FONT_WEIGHT,
         fill: subheading.color,
         linethrough: subheading.left.hasStrikethrough,
         selectable: false,
@@ -217,7 +222,7 @@ function addSubheading(canvas, subheading, position) {
       currentX += leftTextObj.width + LAYOUT.SUBHEADING_SPLIT_GAP;
     }
 
-    // Right part - uses SUBHEADING_RIGHT config (Bold, 36px)
+    // Right part - uses weightRight from state
     if (subheading.right.text.trim()) {
       const rightText = formatSubheadingText(
         subheading.right.text,
@@ -231,8 +236,8 @@ function addSubheading(canvas, subheading, position) {
         left: currentX,
         top: position.y - (baselineOffset * 0.2), // Slight adjustment for visual alignment
         fontSize: TEXT.SUBHEADING_RIGHT.FONT_SIZE,
-        fontFamily: TEXT.SUBHEADING_RIGHT.FONT_FAMILY,
-        fontWeight: TEXT.SUBHEADING_RIGHT.FONT_WEIGHT,
+        fontFamily: fontFamily,
+        fontWeight: subheading.weightRight || TEXT.SUBHEADING_RIGHT.FONT_WEIGHT,
         fill: subheading.color,
         selectable: false,
         evented: false,
@@ -245,13 +250,15 @@ function addSubheading(canvas, subheading, position) {
 
 /**
  * Add CTA button with text
+ * Uses user-selected font family and weight from state
  */
 function addCTAButton(canvas, ctaButton, position) {
   // Create text first to measure dimensions
+  // Use font/weight from state (user-selectable), fallback to config defaults
   const text = new fabric.Text(ctaButton.text, {
     fontSize: TEXT.CTA.FONT_SIZE,
-    fontFamily: TEXT.CTA.FONT_FAMILY,
-    fontWeight: TEXT.CTA.FONT_WEIGHT,
+    fontFamily: ctaButton.fontFamily || TEXT.CTA.FONT_FAMILY,
+    fontWeight: ctaButton.fontWeight || TEXT.CTA.FONT_WEIGHT,
     fill: ctaButton.textColor,
     selectable: false,
     evented: false,
@@ -286,14 +293,16 @@ function addCTAButton(canvas, ctaButton, position) {
 
 /**
  * Add T&C text
+ * Uses user-selected font family and weight from state
  */
 function addTCText(canvas, tcText, position) {
   const text = new fabric.Text(tcText.text, {
     left: position.x,
     top: position.y,
     fontSize: TEXT.TC.FONT_SIZE,
-    fontFamily: TEXT.TC.FONT_FAMILY,
-    fontWeight: TEXT.TC.FONT_WEIGHT,
+    // Use font/weight from state (user-selectable), fallback to config defaults
+    fontFamily: tcText.fontFamily || TEXT.TC.FONT_FAMILY,
+    fontWeight: tcText.fontWeight || TEXT.TC.FONT_WEIGHT,
     fill: tcText.color,
     selectable: false,
     evented: false,
@@ -304,16 +313,18 @@ function addTCText(canvas, tcText, position) {
 
 /**
  * Add offer badge at top-right corner
+ * Uses user-selected font family and weight from state
  * @param {fabric.Canvas} canvas
  * @param {Object} offerBadge
  * @param {string} edgeType - 'sharp' or 'rounded'
  */
 function addOfferBadge(canvas, offerBadge, edgeType) {
   // Create text first to measure dimensions
+  // Use font/weight from state (user-selectable), fallback to config defaults
   const text = new fabric.Text(offerBadge.text, {
     fontSize: TEXT.OFFER_BADGE.FONT_SIZE,
-    fontFamily: TEXT.OFFER_BADGE.FONT_FAMILY,
-    fontWeight: TEXT.OFFER_BADGE.FONT_WEIGHT,
+    fontFamily: offerBadge.fontFamily || TEXT.OFFER_BADGE.FONT_FAMILY,
+    fontWeight: offerBadge.fontWeight || TEXT.OFFER_BADGE.FONT_WEIGHT,
     fill: offerBadge.textColor,
     selectable: false,
     evented: false,

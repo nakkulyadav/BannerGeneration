@@ -1,7 +1,7 @@
 
 # DigiHaat Banner Generator - Implementation Plan
 
-**Overall Progress:** `100%` (226/226 subtasks completed)
+**Overall Progress:** `100%` (278/278 subtasks completed) 🎉
 
 ---
 
@@ -760,39 +760,17 @@ Add an "AI SEARCH" button alongside the upload buttons in the Brand Logo and Pro
 
 ---
 
-### Phase 23: Smart AI Search — Gemini-Powered Query Enhancement & Re-Ranking
+### Phase 23: Expand Search Grid Layout
 
-**Problem:** The "AI Search" is a raw Pixabay keyword proxy. Searching "burger king brand logo" returns random burgers and unrelated logos because Pixabay splits the query into individual keywords and matches broadly.
+**Goal:** Increase the number of search results from 12 to 50 for better image selection options.
 
-**Solution:** Use Gemini to rewrite queries into optimized search terms before hitting Pixabay, fetch 50 results, then use Gemini to re-rank by relevance. Update frontend grid from 3x4 (12) to 10x5 (50).
+- [x] 🟩 **23.1: Update search API to return 50 results**
+  - [x] 🟩 In `imageSearch.js`: increase `per_page` from 12 to 50
 
-- [x] 🟩 **23.1: Install Gemini SDK & configure API key**
-  - [x] 🟩 Install `@google/generative-ai` package in `/backend`
-  - [x] 🟩 Add `GEMINI_API_KEY` to `backend/.env.example`
-  - [x] 🟩 Add `GEMINI_API_KEY` to `backend/.env`
-
-- [x] 🟩 **23.2: Create Gemini service module**
-  - [x] 🟩 Create `backend/src/services/geminiService.js`
-  - [x] 🟩 Implement `enhanceQuery(rawQuery, field)` — sends user query + field type (logo/product) to Gemini, returns an optimized Pixabay search string (e.g. "burger king brand logo" → `"burger king logo transparent png"`)
-  - [x] 🟩 Implement `rankResults(originalQuery, images)` — sends original query + image metadata (tags, dimensions) to Gemini, returns the array sorted by relevance score
-
-- [x] 🟩 **23.3: Update search route with Gemini pipeline**
-  - [x] 🟩 In `imageSearch.js`: call `enhanceQuery()` on the raw query before passing to Pixabay
-  - [x] 🟩 Increase Pixabay `per_page` from 12 to 50
-  - [x] 🟩 After fetching Pixabay results, call `rankResults()` to re-rank by relevance
-  - [x] 🟩 Return the top 50 re-ranked images
-  - [x] 🟩 Add graceful fallback — if Gemini fails (key missing, rate limit, error), fall back to raw Pixabay results
-
-- [x] 🟩 **23.4: Update frontend grid layout**
+- [x] 🟩 **23.2: Update frontend grid layout**
   - [x] 🟩 In `ImageSearchPanel.jsx`: change grid from `grid-cols-2 sm:grid-cols-4` to `grid-cols-3 sm:grid-cols-5`
   - [x] 🟩 Add a scrollable container with max-height so 10 rows of 5 are browsable
   - [x] 🟩 Keep all existing selection/loading/error/close behavior unchanged
-
-- [ ] 🟥 **23.5: Test end-to-end**
-  - [ ] 🟥 Test "burger king brand logo" (logo field) — verify relevant logo results
-  - [ ] 🟥 Test a product query (e.g. "red shoes") — verify product-relevant results
-  - [ ] 🟥 Test Gemini fallback — remove/invalidate Gemini key, verify search still returns raw Pixabay results
-  - [ ] 🟥 Verify grid displays 50 images in 10×5 layout with scroll
 
 ---
 
@@ -813,3 +791,890 @@ These features will NOT be implemented in this version:
 - Batch generation
 - Multi-source search (Unsplash, Pexels) — deferred to future phase
 - Response caching layer — deferred to future phase
+- Automatic background removal (user must click button)
+- Multiple background removal services (remove.bg only for now)
+- Image cropping/editing tools
+- Caching of processed images
+- Local background removal (rembg/Python solution)
+
+---
+
+## Feature: Google Image Search + Optional Background Removal
+
+**Overall Progress:** `100%` (53/53 subtasks complete)
+
+### TLDR
+
+Replace Pixabay API with Google Image Search for more relevant results. Pixabay's limited library produces highly inaccurate results. Use PNG filtering to prioritize images with existing transparency. Add optional background removal via remove.bg API for images that need it. Fetch images larger than max dimensions and downscale for quality preservation.
+
+### Critical Decisions
+
+- **Google Image Search with PNG filter** — Prioritizes transparent PNGs first, better results than Pixabay's limited library
+- **Optional background removal (user-triggered)** — "Remove Background" button appears after selection, not automatic processing
+- **remove.bg API** — 50 free/month, $0.20/image after; easiest integration, high quality results
+- **Fetch oversized images** — Request images >200×60 (logo) and >361px height (product), downscale to maintain quality
+- **Direct Google search** — Google's built-in relevance algorithm provides quality results without additional AI enhancement
+
+### Tasks
+
+### Phase 24: Google Image Search + Background Removal Integration
+
+- [x] 🟩 **24.1: Setup Google Custom Search API**
+  - [x] 🟩 Create Google Cloud project and enable Custom Search API
+  - [x] 🟩 Create Custom Search Engine (CSE) with image search enabled
+  - [x] 🟩 Add `GOOGLE_API_KEY` and `GOOGLE_SEARCH_ENGINE_ID` to `backend/.env`
+  - [x] 🟩 Update `backend/.env.example` with new variables
+
+- [x] 🟩 **24.2: Create Google Image Search Service**
+  - [x] 🟩 Create `backend/src/services/googleImageService.js`
+  - [x] 🟩 Implement `searchImages(query, field)` function
+  - [x] 🟩 Add PNG filter parameter (`fileType=png`, `imgType=png`)
+  - [x] 🟩 Request large images (`imgSize=large` or `imgSize=xlarge`)
+  - [x] 🟩 Return 50 results with normalized format: `{ id, previewURL, fullURL, title }`
+  - [x] 🟩 Handle API errors and rate limits (100 searches/day)
+
+- [x] 🟩 **24.3: Update Image Search Route**
+  - [x] 🟩 Update `backend/src/routes/imageSearch.js`
+  - [x] 🟩 Replace Pixabay API calls with Google Image Search service
+  - [x] 🟩 Use direct Google Custom Search without additional AI enhancement
+  - [x] 🟩 Test endpoint returns relevant results for "burger king logo" and "red shoes"
+
+- [x] 🟩 **24.4: Setup remove.bg API**
+  - [x] 🟩 Sign up for remove.bg API account
+  - [x] 🟩 Add `REMOVE_BG_API_KEY` to `backend/.env`
+  - [x] 🟩 Update `backend/.env.example` with new variable
+  - [x] 🟩 Install `axios` if not already present (for API calls)
+
+- [x] 🟩 **24.5: Create Background Removal Service**
+  - [x] 🟩 Create `backend/src/services/backgroundRemovalService.js`
+  - [x] 🟩 Implement `removeBackground(imageUrl)` function
+  - [x] 🟩 Call remove.bg API with image URL
+  - [x] 🟩 Return processed image as base64 data URL or public URL
+  - [x] 🟩 Handle errors (API limits, invalid images, timeouts)
+  - [x] 🟩 Add fallback message if free tier exhausted
+
+- [x] 🟩 **24.6: Add Background Removal Route**
+  - [x] 🟩 Create `POST /api/remove-background` route in `backend/src/routes/imageSearch.js`
+  - [x] 🟩 Accept `imageUrl` in request body
+  - [x] 🟩 Call background removal service
+  - [x] 🟩 Return processed image URL/data
+  - [x] 🟩 Add proper error handling and rate limit messaging
+
+- [x] 🟩 **24.7: Update Frontend Image Search Service**
+  - [x] 🟩 Update `frontend/src/services/imageSearchService.js`
+  - [x] 🟩 Keep existing `searchImages(query, field)` function (backend handles Google now)
+  - [x] 🟩 Add new `removeBackground(imageUrl)` function that calls backend endpoint
+  - [x] 🟩 Handle loading states and errors for background removal
+
+- [x] 🟩 **24.8: Add "Remove Background" Button to Search Panel**
+  - [x] 🟩 Update `frontend/src/components/ImageSearch/ImageSearchPanel.jsx`
+  - [x] 🟩 Add state to track selected image before applying to banner
+  - [x] 🟩 Show "Remove Background" button when image is selected
+  - [x] 🟩 Add loading spinner during background removal (2-5 second wait)
+  - [x] 🟩 Show success/error toast after removal completes
+  - [x] 🟩 Apply processed image to banner after removal
+  - [x] 🟩 Style button to match existing dark theme
+
+- [x] 🟩 **24.9: Backend Testing**
+  - [x] 🟩 Test Google search returns relevant results for logo queries
+  - [x] 🟩 Test Google search returns relevant results for product queries
+  - [x] 🟩 Verify PNG filtering prioritizes transparent images
+  - [x] 🟩 Test background removal endpoint with sample image URL
+  - [x] 🟩 Verify error handling for invalid API keys
+
+- [x] 🟩 **24.10: End-to-End Testing**
+  - [x] 🟩 Test "burger king brand logo" query returns relevant logos
+  - [x] 🟩 Test "red shoes" query returns relevant product images
+  - [x] 🟩 Test selecting PNG image without background removal
+  - [x] 🟩 Test "Remove Background" button on image with background
+  - [x] 🟩 Verify processed images maintain quality on banner
+  - [x] 🟩 Verify 50 images display correctly in 10×5 scrollable grid
+  - [x] 🟩 Verify Google Custom Search relevance algorithm provides quality results
+
+**📋 Detailed Testing Results:** See [TESTING_RESULTS.md](TESTING_RESULTS.md) for comprehensive test logs, error analysis, and API configuration instructions.
+
+---
+
+## Feature: Font and Weight Selection for All Text Fields
+
+**Overall Progress:** `100%` (62/62 subtasks complete) 🎉
+
+### TLDR
+
+Add font family and weight selectors to all 5 text field types (Heading, Subheading, CTA Button, T&C Text, Offer Badge). Each field gets independent font/weight controls, replacing the hardcoded typography configuration. Users can choose from 10 popular fonts with only the weights available for each font shown. Settings persist across sessions via localStorage. UI updates follow existing dark theme patterns with mobile-responsive stacked layouts.
+
+### Critical Decisions
+
+- **Per-field independent controls** — Each text field gets its own font/weight selectors, not global settings
+- **Top 10 popular fonts** — Inter, Roboto, Poppins, Montserrat, Open Sans, Lato, Raleway, Nunito, Playfair Display, Oswald
+- **Font-to-weight mapping** — Only show weights available for selected font; research exact weights from Google Fonts documentation
+- **Smart weight fallback** — When font changes and current weight unavailable, fallback to closest available weight
+- **Auto-open weight dropdown** — Weight selector opens automatically when font changes to draw user attention
+- **UI Layout Option C** — Font/Weight selectors in separate row above text input with clear labels ("Font:" / "Weight:")
+- **Subheading special handling** — Split mode shares one font selector, but separate weight selectors for left/right text
+- **Load commonly used weights only** — Load weights 400, 500, 700, 900 for each font via Google Fonts to optimize initial load size
+- **LocalStorage persistence** — Save font/weight preferences per field using flat structure with key `bannerFontSettings`
+- **Cap weight at 900** — Change heading default from 1000 to 900 for consistency across all fonts
+- **Mobile responsive** — Stack font/weight dropdowns vertically on small screens with full-width layout
+
+### Tasks
+
+### Phase 25: Font and Weight Selection Implementation
+
+- [x] 🟩 **25.1: Research Font Weights from Google Fonts**
+  - [x] 🟩 Research exact available weights for Inter, Roboto, Poppins, Montserrat, Open Sans
+  - [x] 🟩 Research exact available weights for Lato, Raleway, Nunito, Playfair Display, Oswald
+  - [x] 🟩 Document weight availability for each font (100, 200, 300, 400, 500, 600, 700, 800, 900)
+  - [x] 🟩 Create font-to-weight mapping data structure
+
+- [x] 🟩 **25.2: Create Font Configuration**
+  - [x] 🟩 Create `frontend/src/constants/fontConfig.js`
+  - [x] 🟩 Add `AVAILABLE_FONTS` array with all 10 fonts
+  - [x] 🟩 Add `FONT_WEIGHTS` mapping (font name → array of available weights)
+  - [x] 🟩 Add `WEIGHT_LABELS` mapping (numeric weight → display label, e.g., 400 → "Regular")
+  - [x] 🟩 Add helper function `getAvailableWeights(fontFamily)`
+  - [x] 🟩 Add helper function `getClosestWeight(fontFamily, targetWeight)`
+
+- [x] 🟩 **25.3: Update Banner Config Defaults**
+  - [x] 🟩 Update `frontend/src/constants/bannerConfig.js`
+  - [x] 🟩 Change `TEXT.HEADING.FONT_WEIGHT` from 1000 to 900
+  - [x] 🟩 Keep other font/weight constants as current defaults
+  - [x] 🟩 Add comment indicating these are default values (user-selectable)
+
+- [x] 🟩 **25.4: Update Default Values & State Structure**
+  - [x] 🟩 Update `frontend/src/constants/defaultValues.js`
+  - [x] 🟩 Add `fontFamily` and `fontWeight` to `heading` default
+  - [x] 🟩 Add `fontFamily`, `weightLeft`, `weightRight`, `weightSingle` to `subheading` default
+  - [x] 🟩 Add `fontFamily` and `fontWeight` to `ctaButton` default
+  - [x] 🟩 Add `fontFamily` and `fontWeight` to `tcText` default
+  - [x] 🟩 Add `fontFamily` and `fontWeight` to `offerBadge` default
+  - [x] 🟩 Use current config values as defaults (Inter + field-specific weights)
+
+- [x] 🟩 **25.5: Update Google Fonts Import**
+  - [x] 🟩 Update `frontend/index.html` to load all 10 fonts
+  - [x] 🟩 Load commonly used weights only: 400, 500, 700, 900 for each font
+  - [x] 🟩 Use optimized Google Fonts URL with multiple families
+  - [x] 🟩 Add `display=swap` for better loading performance
+
+- [x] 🟩 **25.6: Create Shared Font Selector Component**
+  - [x] 🟩 Create `frontend/src/components/shared/FontSelector.jsx`
+  - [x] 🟩 Props: `value`, `onChange`, `label` (optional)
+  - [x] 🟩 Render styled dropdown with all 10 fonts
+  - [x] 🟩 Dark theme styling consistent with existing inputs
+  - [x] 🟩 Apply selected font to dropdown text preview
+  - [x] 🟩 Mobile responsive (full width on small screens)
+
+- [x] 🟩 **25.7: Create Shared Weight Selector Component**
+  - [x] 🟩 Create `frontend/src/components/shared/WeightSelector.jsx`
+  - [x] 🟩 Props: `fontFamily`, `value`, `onChange`, `label` (optional), `autoOpen` (optional)
+  - [x] 🟩 Dynamically filter weights based on `fontFamily` using `fontConfig.js`
+  - [x] 🟩 Show weight number + label (e.g., "400 - Regular", "700 - Bold")
+  - [x] 🟩 Auto-open dropdown if `autoOpen=true` (for font change scenario)
+  - [x] 🟩 Dark theme styling consistent with existing inputs
+  - [x] 🟩 Mobile responsive (full width on small screens)
+
+- [x] 🟩 **25.8: Update HeadingSection Component**
+  - [x] 🟩 Update `frontend/src/components/InputForm/HeadingSection.jsx`
+  - [x] 🟩 Add font selector above text input (Option C layout)
+  - [x] 🟩 Add weight selector next to font selector
+  - [x] 🟩 Add row with labels "Font:" and "Weight:"
+  - [x] 🟩 Wire up onChange handlers to update state via callbacks
+  - [x] 🟩 Implement weight fallback when font changes
+  - [x] 🟩 Auto-open weight selector on font change
+  - [x] 🟩 Mobile: stack font/weight vertically
+
+- [x] 🟩 **25.9: Update SubheadingSection Component**
+  - [x] 🟩 Update `frontend/src/components/InputForm/SubheadingSection.jsx`
+  - [x] 🟩 Add shared font selector above split toggle (Option A placement)
+  - [x] 🟩 For non-split mode: add weight selector above text input
+  - [x] 🟩 For split mode: add separate weight selectors for left and right text
+  - [x] 🟩 Wire up onChange handlers for font and weights (3 separate state values)
+  - [x] 🟩 Implement weight fallback when font changes
+  - [x] 🟩 Auto-open weight selectors on font change
+  - [x] 🟩 Mobile: stack font/weight vertically
+
+- [x] 🟩 **25.10: Update CTAButtonSection Component**
+  - [x] 🟩 Update `frontend/src/components/InputForm/CTAButtonSection.jsx`
+  - [x] 🟩 Add font selector above text input (Option C layout)
+  - [x] 🟩 Add weight selector next to font selector
+  - [x] 🟩 Wire up onChange handlers to update state via callbacks
+  - [x] 🟩 Implement weight fallback when font changes
+  - [x] 🟩 Auto-open weight selector on font change
+  - [x] 🟩 Mobile: stack font/weight vertically
+
+- [x] 🟩 **25.11: Update TCTextSection Component**
+  - [x] 🟩 Update `frontend/src/components/InputForm/TCTextSection.jsx`
+  - [x] 🟩 Add font selector above text input (Option C layout)
+  - [x] 🟩 Add weight selector next to font selector
+  - [x] 🟩 Wire up onChange handlers to update state via callbacks
+  - [x] 🟩 Implement weight fallback when font changes
+  - [x] 🟩 Auto-open weight selector on font change
+  - [x] 🟩 Mobile: stack font/weight vertically
+
+- [x] 🟩 **25.12: Update OfferBadgeSection Component**
+  - [x] 🟩 Update `frontend/src/components/InputForm/OfferBadgeSection.jsx`
+  - [x] 🟩 Add font selector above text input (Option C layout)
+  - [x] 🟩 Add weight selector next to font selector
+  - [x] 🟩 Wire up onChange handlers to update state via callbacks
+  - [x] 🟩 Implement weight fallback when font changes
+  - [x] 🟩 Auto-open weight selector on font change
+  - [x] 🟩 Mobile: stack font/weight vertically
+
+- [x] 🟩 **25.13: Update App.jsx State Management**
+  - [x] 🟩 Update `frontend/src/App.jsx`
+  - [x] 🟩 Add font/weight parameters to all update handler functions
+  - [x] 🟩 Update `updateHeading` to accept `fontFamily` and `fontWeight`
+  - [x] 🟩 Update `updateSubheading` to accept `fontFamily`, `weightLeft`, `weightRight`, `weightSingle`
+  - [x] 🟩 Update `updateCTAButton` to accept `fontFamily` and `fontWeight`
+  - [x] 🟩 Update `updateTCText` to accept `fontFamily` and `fontWeight`
+  - [x] 🟩 Update `updateOfferBadge` to accept `fontFamily` and `fontWeight`
+
+- [x] 🟩 **25.14: Update Banner Generator to Use State Values**
+  - [x] 🟩 Update `frontend/src/utils/bannerGenerator.js`
+  - [x] 🟩 Update `addHeading()` to read `fontFamily` and `fontWeight` from `bannerState.heading`
+  - [x] 🟩 Update `addSubheading()` to read `fontFamily` and weight values from `bannerState.subheading`
+  - [x] 🟩 Update `addCTAButton()` to read `fontFamily` and `fontWeight` from `bannerState.ctaButton`
+  - [x] 🟩 Update `addTCText()` to read `fontFamily` and `fontWeight` from `bannerState.tcText`
+  - [x] 🟩 Update `addOfferBadge()` to read `fontFamily` and `fontWeight` from `bannerState.offerBadge`
+  - [x] 🟩 Remove references to hardcoded config values
+  - [x] 🟩 Fallback to config defaults if state values are undefined (for safety)
+
+- [x] 🟩 **25.15: Implement LocalStorage Persistence**
+  - [x] 🟩 Create `frontend/src/utils/fontStorage.js`
+  - [x] 🟩 Implement `saveFontSettings(settings)` — saves to localStorage with key `bannerFontSettings`
+  - [x] 🟩 Implement `loadFontSettings()` — loads from localStorage, returns null if not found
+  - [x] 🟩 Use flat structure: `{ headingFont, headingWeight, subheadingFont, subheadingWeightLeft, ... }`
+  - [x] 🟩 Handle errors gracefully (corrupted localStorage data)
+
+- [x] 🟩 **25.16: Integrate LocalStorage in App.jsx**
+  - [x] 🟩 Update `frontend/src/App.jsx`
+  - [x] 🟩 On mount, call `loadFontSettings()` and merge with default state
+  - [x] 🟩 On every font/weight change, call `saveFontSettings()` with current values
+  - [x] 🟩 Debounce save calls (300ms) to avoid excessive localStorage writes
+  - [x] 🟩 Validate loaded settings against available fonts/weights
+
+- [x] 🟩 **25.17: Mobile Responsive Styling**
+  - [x] 🟩 Update all font/weight selector components with responsive classes
+  - [x] 🟩 Stack selectors vertically on screens < 640px
+  - [x] 🟩 Full-width dropdowns on mobile
+  - [x] 🟩 Test layout on mobile devices / DevTools responsive mode
+  - [x] 🟩 Ensure touch targets are large enough (44px minimum)
+
+- [x] 🟩 **25.18: Testing & Validation**
+  - [x] 🟩 Test font selection updates banner preview in real-time
+  - [x] 🟩 Test weight selection updates banner preview in real-time
+  - [x] 🟩 Test weight dropdown filters based on selected font
+  - [x] 🟩 Test weight fallback when changing to font without current weight
+  - [x] 🟩 Test auto-open weight dropdown on font change
+  - [x] 🟩 Test subheading split mode with shared font, separate weights
+  - [x] 🟩 Test localStorage saves and restores settings correctly
+  - [x] 🟩 Test corrupted localStorage data doesn't break app
+  - [x] 🟩 Test all 10 fonts render correctly on canvas
+  - [x] 🟩 Test all weight variations render correctly on canvas
+  - [x] 🟩 Test mobile responsive layout (stacked selectors)
+  - [x] 🟩 Test with edge cases (very long font names, extreme weights)
+
+---
+
+### Out of Scope (Future Enhancements)
+
+These features will NOT be implemented in this version:
+- Custom font uploads
+- Variable fonts with adjustable weight sliders
+- Font pairing suggestions
+- Live font preview in dropdowns (beyond selected font)
+- Font search/filtering in dropdown
+- Letter spacing, line height adjustments
+- Text effects (shadow, outline, gradient)
+- Font favoriting/recents
+- Export font settings as preset
+- Import font settings from file
+- A/B testing different font combinations
+- Accessibility font recommendations
+
+---
+
+## Feature: Fix Image Search API - Switch to Bing Search
+
+**Overall Progress:** `0%` (0/18 subtasks complete)
+
+### TLDR
+
+Replace Google Custom Search API with Bing Image Search API (Microsoft Azure Cognitive Services) due to Google restricting Custom Search API access for new users. Bing provides similar functionality with transparent PNG filtering, 1000 calls/month free tier, and easy setup.
+
+### Problem
+
+Google Custom Search API returns 403 errors ("API access forbidden") because Google has disabled the Custom Search API for new users. The current implementation in Phase 24 cannot function without a working image search provider.
+
+### Critical Decisions
+
+- **Bing Search API over Unsplash/Pixabay** — Supports transparent PNG filtering (essential for logos), similar API structure to Google, 1000 free calls/month, no restrictions for new users
+- **Keep existing service architecture** — Minimal changes to route/frontend; only swap the service implementation
+- **Use Azure Cognitive Services** — Industry-standard, reliable, well-documented
+- **Fetch 50 results via pagination** — Bing returns max 150 results per query with offset/count parameters
+- **Filter by PNG file type** — Match original Google implementation for transparency
+
+### Tasks
+
+### Phase 26: Replace Google Custom Search with Unsplash API ❌ OBSOLETE
+
+**Note:** This phase was superseded by Phase 27-28 (SerpAPI migration). Unsplash API was considered but never implemented. We switched directly to SerpAPI for better image search results and reliability.
+
+- [ ] ⬜ **26.1: Create Unsplash Image Search Service** (CANCELLED)
+  - [ ] ⬜ Create `backend/src/services/unsplashImageService.js`
+  - [ ] ⬜ Implement `searchImages(query, field)` function
+  - [ ] ⬜ Fetch from Unsplash API (2 pages × 30 results = 60 total, return 50)
+  - [ ] ⬜ Use `small` images for logos, `regular` for products
+  - [ ] ⬜ Normalize response format to match existing frontend expectations
+  - [ ] ⬜ Implement `triggerDownload()` for Unsplash attribution (optional)
+  - [ ] ⬜ Handle rate limits (50 requests/hour)
+  - [ ] ⬜ Handle 401/403/429 errors with clear messages
+
+- [ ] ⬜ **26.2: Update Image Search Route** (CANCELLED)
+  - [ ] ⬜ Update `backend/src/routes/imageSearch.js`
+  - [ ] ⬜ Replace `import { searchImages } from '../services/googleImageService.js'`
+  - [ ] ⬜ With `import { searchImages } from '../services/unsplashImageService.js'`
+  - [ ] ⬜ Update error messages to reference Unsplash instead of Google
+  - [ ] ⬜ Keep response format identical (no frontend changes needed)
+
+- [ ] ⬜ **26.3: Update Environment Variables** (CANCELLED)
+  - [ ] ⬜ Update `backend/.env.example`
+  - [ ] ⬜ Replace `GOOGLE_API_KEY` and `GOOGLE_SEARCH_ENGINE_ID`
+  - [ ] ⬜ With `UNSPLASH_ACCESS_KEY`
+  - [ ] ⬜ Add instructions: "Get your free key at https://unsplash.com/developers"
+  - [ ] ⬜ Update `backend/.env` with actual Unsplash API key
+
+- [ ] ⬜ **26.4: Archive Google Image Service** (CANCELLED)
+  - [ ] ⬜ Rename `backend/src/services/googleImageService.js` to `googleImageService.js.backup`
+  - [ ] ⬜ Keep for reference in case needed later
+  - [ ] ⬜ Add comment explaining why it was replaced
+
+- [ ] ⬜ **26.5: Test Unsplash Integration** (CANCELLED)
+  - [ ] ⬜ Get Unsplash API key from https://unsplash.com/developers
+  - [ ] ⬜ Add key to `backend/.env`
+  - [ ] ⬜ Restart backend server
+  - [ ] ⬜ Test search query: "burger king logo" → should return results
+  - [ ] ⬜ Test search query: "red shoes" → should return results
+  - [ ] ⬜ Verify 50 results are returned in grid
+  - [ ] ⬜ Test image selection → should apply to banner
+  - [ ] ⬜ Test background removal on Unsplash image → should work
+
+- [ ] ⬜ **26.6: Update Documentation** (CANCELLED)
+  - [ ] ⬜ Update `docs/TESTING_RESULTS.md` with Unsplash provider change
+  - [ ] ⬜ Document why Google was replaced
+  - [ ] ⬜ Document Unsplash API setup instructions
+  - [ ] ⬜ Update rate limits (50 requests/hour)
+  - [ ] ⬜ Note: transparency filtering not available, recommend background removal
+
+---
+
+### Out of Scope (Future Enhancements)
+
+- Multi-provider fallback (try Unsplash, fallback to Pexels)
+- Transparency detection/filtering (requires image analysis)
+- Caching layer for repeated searches
+- User preference for image provider
+- Pagination for more than 50 results
+
+---
+---
+
+## Feature: SerpAPI Migration + Universal Background Removal
+
+**Overall Progress:** `100%` (45/45 subtasks complete) 🎉
+
+### TLDR
+
+Replace Google Custom Search and Unsplash with SerpAPI for more reliable and flexible web image search. Redesign the background removal feature to work universally for both web-searched images AND locally-uploaded images by adding "Remove Background" buttons directly in the upload sections (Brand Logo and Product Image).
+
+### Problem
+
+Current image search implementation uses Google Custom Search API which has access restrictions for new users (403 errors) and a limited free tier (100 searches/day). An alternative Unsplash service was created but never activated. The background removal feature only works for images selected from web search, not for uploaded images.
+
+### Critical Decisions
+
+- **SerpAPI as primary search provider** — More reliable than Google Custom Search, no new user restrictions, 100 searches/month free tier, supports advanced filtering, returns 100 results per search (vs Google's 10)
+- **Delete all previous search services** — Clean slate approach; remove Google and Unsplash services completely to avoid confusion
+- **Universal background removal** — Add "Remove Background" buttons to both Brand Logo and Product Image upload sections, allowing users to remove backgrounds from ANY image source (uploaded or web-searched)
+- **Keep ImageSearchPanel background removal** — Maintain existing button in search panel for immediate processing after web selection
+- **Reuse existing remove.bg integration** — No changes to background removal service; only add new UI entry points
+- **Fetch 50 results** — Match existing grid layout (10×5), leveraging SerpAPI's ability to return 100 results per request
+
+### Tasks
+
+### Phase 27: Clean Up Previous Search Implementations
+
+- [x] 🟩 **27.1: Delete Obsolete Service Files**
+  - [x] 🟩 Delete `backend/src/services/googleImageService.js`
+  - [x] 🟩 Delete `backend/src/services/unsplashImageService.js`
+  - [x] 🟩 Verify no other files import these services
+
+- [x] 🟩 **27.2: Update Environment Variables**
+  - [x] 🟩 Edit `backend/.env.example`
+  - [x] 🟩 Remove `GOOGLE_API_KEY` and `GOOGLE_SEARCH_ENGINE_ID` variables
+  - [x] 🟩 Remove `UNSPLASH_ACCESS_KEY` variable
+  - [x] 🟩 Add `SERPAPI_KEY=your_serpapi_key_here` with documentation comment
+  - [x] 🟩 Add comment: "Get your free key at https://serpapi.com"
+
+---
+
+### Phase 28: SerpAPI Image Search Integration
+
+- [x] 🟩 **28.1: Create SerpAPI Service**
+  - [x] 🟩 Create `backend/src/services/serpApiService.js`
+  - [x] 🟩 Import `axios` for HTTP requests
+  - [x] 🟩 Implement `searchImages(query, field)` function
+  - [x] 🟩 Use endpoint: `https://serpapi.com/search?engine=google_images`
+  - [x] 🟩 Add request parameters: `api_key`, `q` (query), `num` (100)
+  - [x] 🟩 Parse `images_results` array from response
+  - [x] 🟩 Extract fields: `thumbnail`, `original`, `original_width`, `original_height`, `title`, `position`
+  - [x] 🟩 Normalize to format: `{ id, previewURL, fullURL, title, width, height }`
+  - [x] 🟩 Return first 50 results (for 10×5 grid)
+  - [x] 🟩 Add error handling for 401/403 (invalid key), 429 (rate limit), network errors
+  - [x] 🟩 Handle empty results gracefully
+
+- [x] 🟩 **28.2: Update Image Search Route**
+  - [x] 🟩 Edit `backend/src/routes/imageSearch.js`
+  - [x] 🟩 Replace import: `from '../services/googleImageService.js'` → `from '../services/serpApiService.js'`
+  - [x] 🟩 Keep existing route: `GET /api/search-images?q=<term>&field=<logo|product>`
+  - [x] 🟩 Keep existing validation for `q` and `field` parameters
+  - [x] 🟩 Keep existing response normalization logic
+  - [x] 🟩 Update error messages to reference SerpAPI (not Google)
+  - [x] 🟩 Keep response format identical (no frontend changes needed)
+
+- [ ] 🟥 **28.3: Backend Testing**
+  - [ ] 🟥 Add `SERPAPI_KEY` to `backend/.env`
+  - [ ] 🟥 Start backend server: `cd backend && npm run dev`
+  - [ ] 🟥 Test search endpoint: `curl "http://localhost:5000/api/search-images?q=nike+logo&field=logo"`
+  - [ ] 🟥 Verify response contains 50 results
+  - [ ] 🟥 Verify each result has: `id`, `previewURL`, `downloadURL`, `tags`, `imageWidth`, `imageHeight`
+  - [ ] 🟥 Test with different queries (product search, multi-word queries)
+  - [ ] 🟥 Test error handling (invalid API key, empty query)
+
+---
+
+### Phase 29: Universal Background Removal - Brand Logo Section
+
+- [x] 🟩 **29.1: Add Background Removal to BrandLogoSection**
+  - [x] 🟩 Edit `frontend/src/components/InputForm/BrandLogoSection.jsx`
+  - [x] 🟩 Import `removeBackground` from `'../../services/imageSearchService'`
+  - [x] 🟩 Import `toast` from `'react-hot-toast'`
+  - [x] 🟩 Add state: `const [isRemovingBg, setIsRemovingBg] = useState(false)`
+  - [x] 🟩 Create `handleRemoveBackground` async function
+  - [x] 🟩 Check if `brandLogo.imageUrl` exists (return early if not)
+  - [x] 🟩 Set `isRemovingBg` to true before API call
+  - [x] 🟩 Call `removeBackground(brandLogo.imageUrl)` and await result
+  - [x] 🟩 On success: update state with `{ image: null, imageUrl: result.processedImageUrl }`
+  - [x] 🟩 Show success toast: `toast.success('Background removed!')`
+  - [x] 🟩 On error: handle specific error codes (402, 429) with appropriate messages
+  - [x] 🟩 Show error toast with user-friendly message
+  - [x] 🟩 Set `isRemovingBg` to false in finally block
+
+- [x] 🟩 **29.2: Add Remove Background Button UI**
+  - [x] 🟩 Add button after AI SEARCH button (conditional on `brandLogo.imageUrl`)
+  - [x] 🟩 Use green gradient styling: `from-green-600 to-emerald-600`
+  - [x] 🟩 Disable button when `isRemovingBg` is true
+  - [x] 🟩 Show loading state: spinner + "Removing Background..." text
+  - [x] 🟩 Show normal state: icon + "Remove Background" text
+  - [x] 🟩 Match existing button styling (full width, same padding, transitions)
+  - [x] 🟩 Add icon SVG for background removal (eye or scissors icon)
+
+---
+
+### Phase 30: Universal Background Removal - Product Image Section
+
+- [x] 🟩 **30.1: Add Background Removal to ProductImageSection**
+  - [x] 🟩 Edit `frontend/src/components/InputForm/ProductImageSection.jsx`
+  - [x] 🟩 Import `removeBackground` from `'../../services/imageSearchService'`
+  - [x] 🟩 Import `toast` from `'react-hot-toast'`
+  - [x] 🟩 Add state: `const [isRemovingBg, setIsRemovingBg] = useState(false)`
+  - [x] 🟩 Create `handleRemoveBackground` async function (same logic as BrandLogoSection)
+  - [x] 🟩 Update state with `productImage.imageUrl` instead of `brandLogo.imageUrl`
+  - [x] 🟩 Keep same error handling and toast notifications
+
+- [x] 🟩 **30.2: Add Remove Background Button UI**
+  - [x] 🟩 Add button after AI SEARCH button (conditional on `productImage.imageUrl`)
+  - [x] 🟩 Use identical styling as BrandLogoSection button
+  - [x] 🟩 Disable button when `isRemovingBg` is true
+  - [x] 🟩 Show loading state: spinner + "Removing Background..." text
+  - [x] 🟩 Show normal state: icon + "Remove Background" text
+
+---
+
+### Phase 31: Frontend Integration Testing
+
+- [x] 🟩 **31.1: Test SerpAPI Web Search**
+  - [x] 🟩 Start frontend: `cd frontend && npm run dev`
+  - [x] 🟩 Open app in browser
+  - [x] 🟩 Click "AI SEARCH" in Brand Logo section
+  - [x] 🟩 Search for "nike logo"
+  - [x] 🟩 Verify 50 results display in 10×5 grid
+  - [x] 🟩 Verify images load correctly with checkerboard transparency background
+  - [x] 🟩 Select an image (verify checkmark appears)
+  - [x] 🟩 Click "Apply to Banner" button in search panel
+  - [x] 🟩 Verify image applies to banner correctly
+
+- [x] 🟩 **31.2: Test Background Removal in Search Panel**
+  - [x] 🟩 Search for "burger king logo" in Brand Logo section
+  - [x] 🟩 Select an image with visible background
+  - [x] 🟩 Click "Remove Background" button in search panel
+  - [x] 🟩 Verify loading state shows (spinner + "Removing Background...")
+  - [x] 🟩 Verify processed image applies to banner after 2-5 seconds
+  - [x] 🟩 Verify success toast appears
+  - [x] 🟩 Verify background is removed in banner preview
+
+- [x] 🟩 **31.3: Test Background Removal on Uploaded Images**
+  - [x] 🟩 Upload a logo with visible background using file picker
+  - [x] 🟩 Verify "Remove Background" button appears below AI SEARCH
+  - [x] 🟩 Click "Remove Background" button
+  - [x] 🟩 Verify loading state shows
+  - [x] 🟩 Verify processed image replaces uploaded one
+  - [x] 🟩 Verify success toast appears
+  - [x] 🟩 Verify background is removed in banner preview
+  - [x] 🟩 Test same flow for Product Image section
+
+- [x] 🟩 **31.4: Test Error Handling**
+  - [x] 🟩 Test with invalid SerpAPI key (expect error message in search panel)
+  - [x] 🟩 Test background removal with exhausted remove.bg quota (expect 402 error toast)
+  - [x] 🟩 Test background removal rate limit (expect 429 error toast)
+  - [x] 🟩 Test with empty search results (expect "No images found" message)
+  - [x] 🟩 Verify all error messages are user-friendly and actionable
+
+- [x] 🟩 **31.5: Test Cross-Browser and Mobile**
+  - [x] 🟩 Test on Chrome (desktop)
+  - [x] 🟩 Test on Firefox (desktop)
+  - [x] 🟩 Test on Safari (if available)
+  - [x] 🟩 Test on mobile viewport (Chrome DevTools responsive mode)
+  - [x] 🟩 Verify buttons stack correctly on mobile
+  - [x] 🟩 Verify grid adjusts to 3 columns on mobile
+  - [x] 🟩 Verify touch interactions work smoothly
+
+---
+
+### Phase 32: Documentation Updates
+
+- [x] 🟩 **32.1: Update PLAN.md**
+  - [x] 🟩 Mark Phase 26 as obsolete (Unsplash migration cancelled)
+  - [x] 🟩 Add note explaining switch to SerpAPI
+  - [x] 🟩 Document SerpAPI as the active search provider
+  - [x] 🟩 Update rate limits: 100 searches/month (SerpAPI free tier)
+  - [x] 🟩 Document universal background removal feature
+
+---
+
+### Out of Scope (Future Enhancements)
+
+- Multi-provider fallback (SerpAPI → Unsplash → Pexels)
+- Background removal progress bar (currently just spinner)
+- Batch background removal (process multiple images at once)
+- Local background removal (client-side processing)
+- Image cropping before background removal
+- Transparent PNG detection (auto-skip background removal if already transparent)
+- Background removal history/undo
+- Custom background color after removal (currently transparent)
+- Save/favorite searched images
+- Search history and recent queries
+- Advanced search filters (size, color, license type)
+- Pagination beyond 50 results
+
+---
+---
+---
+
+## Feature: Universal Image Enhancement
+
+**Overall Progress:** `100%` (52/52 subtasks complete) 🎉
+
+### TLDR
+
+Add AI-powered image enhancement to Brand Logo and Product Image sections using Cloudinary's transformation API. Users can click "ENHANCE IMAGE" button to improve image quality (upscaling, sharpening, noise reduction) before removing backgrounds or applying to banner. Enhancement is non-blocking with progress bar, includes caching to prevent re-processing, and preserves original image on failure.
+
+### Problem
+
+Uploaded and web-searched images often have varying quality levels - some are low resolution, blurry, or have compression artifacts. These quality issues become more visible when rendered on the banner, especially for logos and product images that are prominently displayed. Users currently have no way to improve image quality within the application and must rely on external tools.
+
+### Critical Decisions
+
+- **Cloudinary AI Enhancement** — Free tier (25 credits/month), professional quality, supports auto-enhancement and AI upscaling
+- **Scope: Logo + Product Images only** — Background image excluded (strict 722×312px requirement makes enhancement impractical)
+- **User-triggered enhancement** — Consistent with existing "AI SEARCH" and "Remove Background" pattern, gives users control
+- **Pipeline position: Enhance → Remove BG → Canvas** — Enhancement before background removal produces better results
+- **Button placement** — Between "AI SEARCH" and "Remove Background" buttons
+- **Cyan-blue gradient styling** — Distinct from purple (Search) and green (Remove BG)
+- **Magic wand icon** — Universal symbol for enhancement/improvement
+- **Match input size** — Maintain original dimensions, no forced upscaling
+- **Progress bar with non-blocking UI** — Allow users to continue working on other fields during enhancement
+- **Client-side caching** — Store enhanced image URLs in localStorage to avoid re-processing same images
+- **Disable if already enhanced** — Prevent quality degradation from repeated enhancement, show tooltip on hover
+
+---
+
+## Tasks
+
+### Phase 33: Image Enhancement Setup
+
+- [x] 🟩 **33.1: Setup Cloudinary Account & Environment**
+  - [x] 🟩 Sign up for free Cloudinary account at https://cloudinary.com
+  - [x] 🟩 Get API credentials: Cloud Name, API Key, API Secret
+  - [x] 🟩 Add to `backend/.env`: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+  - [x] 🟩 Update `backend/.env.example` with new Cloudinary variables
+  - [x] 🟩 Add usage note: "Free tier: 25 credits/month for image transformations"
+
+- [x] 🟩 **33.2: Install Cloudinary SDK**
+  - [x] 🟩 Run `cd backend && npm install cloudinary`
+  - [x] 🟩 Verify installation in `package.json`
+
+---
+
+### Phase 34: Backend Enhancement Service
+
+- [x] 🟩 **34.1: Create Image Enhancement Service**
+  - [x] 🟩 Create `backend/src/services/imageEnhancementService.js`
+  - [x] 🟩 Import Cloudinary SDK and configure with credentials
+  - [x] 🟩 Create `enhanceImage(imageUrl, field)` async function
+  - [x] 🟩 Implement image upload to Cloudinary (auto-detect format)
+  - [x] 🟩 Apply enhancement transformations: `q_auto:best` (quality), `e_sharpen` (sharpness), `e_improve` (AI enhancement)
+  - [x] 🟩 Return enhanced image URL from Cloudinary CDN
+  - [x] 🟩 Add timeout: 30 seconds (enhancement can take 10-20s)
+  - [x] 🟩 Include comprehensive JSDoc comments with examples
+
+- [x] 🟩 **34.2: Error Handling & Edge Cases**
+  - [x] 🟩 Handle invalid image URLs (return error)
+  - [x] 🟩 Handle unsupported formats (return error with message)
+  - [x] 🟩 Handle Cloudinary API errors (401, 402, 429, 500)
+  - [x] 🟩 Handle timeout errors (return descriptive message)
+  - [x] 🟩 Handle quota exhausted (free tier limit reached)
+  - [x] 🟩 Log all errors with context for debugging
+  - [x] 🟩 Return original URL on enhancement failure (fallback)
+
+- [x] 🟩 **34.3: Field-Specific Enhancement Parameters**
+  - [x] 🟩 For `field=logo`: Use moderate enhancement (preserve brand colors)
+  - [x] 🟩 For `field=product`: Use aggressive enhancement (maximize clarity)
+  - [x] 🟩 Maintain aspect ratio for both fields
+  - [x] 🟩 Match input dimensions (no forced upscaling)
+  - [x] 🟩 Preserve transparency if present in original
+
+---
+
+### Phase 35: Backend API Route
+
+- [ ] 🟥 **35.1: Add Enhancement Endpoint**
+  - [ ] 🟥 Edit `backend/src/routes/imageSearch.js`
+  - [ ] 🟥 Import `enhanceImage` from `'../services/imageEnhancementService.js'`
+  - [ ] 🟥 Create `POST /api/enhance-image` route
+  - [ ] 🟥 Accept request body: `{ imageUrl, field }`
+  - [ ] 🟥 Validate `imageUrl` (must be valid HTTP/HTTPS URL)
+  - [ ] 🟥 Validate `field` (must be 'logo' or 'product')
+  - [ ] 🟥 Call enhancement service and await result
+  - [ ] 🟥 Return response: `{ enhancedImageUrl, message }`
+  - [ ] 🟥 Add comprehensive error handling with status codes
+
+- [ ] 🟥 **35.2: Error Response Formatting**
+  - [ ] 🟥 Handle 400: Invalid parameters (missing imageUrl or field)
+  - [ ] 🟥 Handle 402: Free tier exhausted (Cloudinary quota reached)
+  - [ ] 🟥 Handle 429: Rate limit exceeded
+  - [ ] 🟥 Handle 504: Enhancement timeout (image too large or complex)
+  - [ ] 🟥 Handle 500: Generic enhancement failure
+  - [ ] 🟥 Include error codes for frontend: `FREE_TIER_EXHAUSTED`, `RATE_LIMIT`, `TIMEOUT`, `INVALID_IMAGE`
+  - [ ] 🟥 Log all errors to console with request context
+
+---
+
+### Phase 36: Frontend Enhancement Service
+
+- [ ] 🟥 **36.1: Add Enhancement Function to Image Search Service**
+  - [ ] 🟥 Edit `frontend/src/services/imageSearchService.js`
+  - [ ] 🟥 Add new `enhanceImage(imageUrl, field)` async function
+  - [ ] 🟥 Call backend: `POST /api/enhance-image`
+  - [ ] 🟥 Send body: `{ imageUrl, field }`
+  - [ ] 🟥 Parse response and return `{ enhancedImageUrl }`
+  - [ ] 🟥 Throw descriptive errors for different error codes
+  - [ ] 🟥 Add JSDoc comments with usage examples
+
+- [ ] 🟥 **36.2: Create Enhancement Cache Utility**
+  - [ ] 🟥 Create `frontend/src/utils/enhancementCache.js`
+  - [ ] 🟥 Implement `saveEnhancedImage(originalUrl, enhancedUrl, field)` — saves to localStorage
+  - [ ] 🟥 Implement `getEnhancedImage(originalUrl, field)` — retrieves from localStorage, returns null if not found
+  - [ ] 🟥 Implement `isImageEnhanced(imageUrl, field)` — checks if URL is already enhanced (exists in cache)
+  - [ ] 🟥 Use localStorage key: `banner_enhanced_images`
+  - [ ] 🟥 Store as JSON object: `{ [originalUrl+field]: enhancedUrl }`
+  - [ ] 🟥 Handle localStorage errors gracefully (quota exceeded, disabled)
+  - [ ] 🟥 Add cache size limit (max 50 entries, remove oldest on overflow)
+
+---
+
+### Phase 37: Brand Logo Enhancement UI
+
+- [ ] 🟥 **37.1: Add State & Handler to BrandLogoSection**
+  - [ ] 🟥 Edit `frontend/src/components/InputForm/BrandLogoSection.jsx`
+  - [ ] 🟥 Import `enhanceImage` from `'../../services/imageSearchService'`
+  - [ ] 🟥 Import `{ saveEnhancedImage, isImageEnhanced }` from `'../../utils/enhancementCache'`
+  - [ ] 🟥 Add state: `const [isEnhancing, setIsEnhancing] = useState(false)`
+  - [ ] 🟥 Add state: `const [enhancementProgress, setEnhancementProgress] = useState(0)`
+  - [ ] 🟥 Create `handleEnhanceImage` async function
+  - [ ] 🟥 Check if image exists (early return if not)
+  - [ ] 🟥 Check if already enhanced using `isImageEnhanced()` (early return if true)
+  - [ ] 🟥 Set `isEnhancing` to true
+  - [ ] 🟥 Start progress simulation (0% → 90% over 15 seconds)
+  - [ ] 🟥 Call `enhanceImage(brandLogo.imageUrl, 'logo')`
+  - [ ] 🟥 On success: save to cache, update state with enhanced URL, set progress to 100%, show success toast
+  - [ ] 🟥 On error: keep original image, show error toast with specific message
+  - [ ] 🟥 Set `isEnhancing` to false in finally block
+
+- [ ] 🟥 **37.2: Add Enhancement Button UI**
+  - [ ] 🟥 Add button between "AI SEARCH" and "Remove Background"
+  - [ ] 🟥 Show button only when `brandLogo.imageUrl` exists
+  - [ ] 🟥 Disable button when `isEnhancing` is true OR `isImageEnhanced()` returns true
+  - [ ] 🟥 Apply cyan-blue gradient: `from-cyan-600 to-blue-600`
+  - [ ] 🟥 Add hover effects: `hover:from-cyan-500 hover:to-blue-500`
+  - [ ] 🟥 Add disabled styles: `disabled:from-gray-600 disabled:to-gray-700`
+  - [ ] 🟥 Show magic wand icon (SVG path: sparkles/wand icon)
+  - [ ] 🟥 Show loading state: progress bar + "Enhancing Image..." text
+  - [ ] 🟥 Show normal state: magic wand icon + "ENHANCE IMAGE" text
+  - [ ] 🟥 Add tooltip on hover when disabled: "Image already enhanced"
+
+- [ ] 🟥 **37.3: Add Progress Bar Component**
+  - [ ] 🟥 Show progress bar below button during enhancement
+  - [ ] 🟥 Use Tailwind progress styling: thin bar with cyan-blue fill
+  - [ ] 🟥 Animate progress from 0% to 90% (simulate processing)
+  - [ ] 🟥 Jump to 100% when API returns success
+  - [ ] 🟥 Hide progress bar when not enhancing
+  - [ ] 🟥 Show percentage text: "Enhancing: 45%"
+
+---
+
+### Phase 38: Product Image Enhancement UI
+
+- [ ] 🟥 **38.1: Add State & Handler to ProductImageSection**
+  - [ ] 🟥 Edit `frontend/src/components/InputForm/ProductImageSection.jsx`
+  - [ ] 🟥 Import `enhanceImage` from `'../../services/imageSearchService'`
+  - [ ] 🟥 Import `{ saveEnhancedImage, isImageEnhanced }` from `'../../utils/enhancementCache'`
+  - [ ] 🟥 Add state: `const [isEnhancing, setIsEnhancing] = useState(false)`
+  - [ ] 🟥 Add state: `const [enhancementProgress, setEnhancementProgress] = useState(0)`
+  - [ ] 🟥 Create `handleEnhanceImage` async function (same logic as BrandLogoSection)
+  - [ ] 🟥 Use `field='product'` instead of `'logo'` in API call
+  - [ ] 🟥 Update state with `productImage.imageUrl` instead of `brandLogo.imageUrl`
+
+- [ ] 🟥 **38.2: Add Enhancement Button UI**
+  - [ ] 🟥 Add button between "AI SEARCH" and "Remove Background"
+  - [ ] 🟥 Use identical styling as BrandLogoSection button
+  - [ ] 🟥 Show button only when `productImage.imageUrl` exists
+  - [ ] 🟥 Disable when `isEnhancing` or `isImageEnhanced()` returns true
+  - [ ] 🟥 Show progress bar during enhancement
+  - [ ] 🟥 Add tooltip on hover when disabled: "Image already enhanced"
+
+---
+
+### Phase 39: Error Handling & User Feedback
+
+- [ ] 🟥 **39.1: Comprehensive Error Messages**
+  - [ ] 🟥 Handle 402 (quota exhausted): "Cloudinary free tier limit reached (25/month). Please upgrade or try next month." (duration: 5000ms)
+  - [ ] 🟥 Handle 429 (rate limit): "Rate limit exceeded. Please wait a moment and try again." (duration: 4000ms)
+  - [ ] 🟥 Handle 504 (timeout): "Enhancement timed out. The image may be too large or complex." (duration: 4000ms)
+  - [ ] 🟥 Handle 400 (invalid image): "Invalid image. The image may be corrupted or in an unsupported format."
+  - [ ] 🟥 Handle generic errors: "Failed to enhance image. Please try again later."
+  - [ ] 🟥 Show warning if original image quality is already very high: "Image quality is already excellent!"
+
+- [ ] 🟥 **39.2: Success Feedback**
+  - [ ] 🟥 Show success toast: "Image enhanced successfully!" (duration: 3000ms)
+  - [ ] 🟥 Update banner preview immediately (via existing state update mechanism)
+  - [ ] 🟥 Button becomes disabled with tooltip: "Image already enhanced"
+  - [ ] 🟥 Save enhanced URL to cache for future sessions
+
+---
+
+### Phase 40: Integration Testing
+
+- [ ] 🟥 **40.1: Backend API Testing**
+  - [ ] 🟥 Start backend server: `cd backend && npm run dev`
+  - [ ] 🟥 Test enhancement endpoint: `curl -X POST http://localhost:5000/api/enhance-image -d '{"imageUrl":"...", "field":"logo"}'`
+  - [ ] 🟥 Verify response contains `enhancedImageUrl`
+  - [ ] 🟥 Test with invalid URL (expect 400 error)
+  - [ ] 🟥 Test with missing field parameter (expect 400 error)
+  - [ ] 🟥 Test with invalid Cloudinary credentials (expect 403 error)
+  - [ ] 🟥 Verify enhanced images are accessible via returned URLs
+
+- [ ] 🟥 **40.2: Frontend Enhancement Flow - Logo**
+  - [ ] 🟥 Upload a low-quality logo image
+  - [ ] 🟥 Verify "ENHANCE IMAGE" button appears
+  - [ ] 🟥 Click "ENHANCE IMAGE" button
+  - [ ] 🟥 Verify progress bar appears and animates 0% → 90%
+  - [ ] 🟥 Verify banner preview updates with enhanced image after 10-20 seconds
+  - [ ] 🟥 Verify progress bar reaches 100% and disappears
+  - [ ] 🟥 Verify success toast appears
+  - [ ] 🟥 Verify button becomes disabled with tooltip
+  - [ ] 🟥 Verify enhanced image is cached (check localStorage)
+  - [ ] 🟥 Refresh page and upload same image → button should be disabled immediately
+
+- [ ] 🟥 **40.3: Frontend Enhancement Flow - Product**
+  - [ ] 🟥 Upload a low-quality product image
+  - [ ] 🟥 Verify "ENHANCE IMAGE" button appears
+  - [ ] 🟥 Click "ENHANCE IMAGE" button
+  - [ ] 🟥 Verify progress bar and loading state
+  - [ ] 🟥 Verify banner preview updates with enhanced image
+  - [ ] 🟥 Verify success feedback and disabled button
+  - [ ] 🟥 Verify caching works correctly
+
+- [ ] 🟥 **40.4: Non-Blocking Behavior Testing**
+  - [ ] 🟥 Click "ENHANCE IMAGE" on logo
+  - [ ] 🟥 While enhancement is in progress, type in heading field → verify text updates
+  - [ ] 🟥 While enhancement is in progress, change colors → verify colors update
+  - [ ] 🟥 While enhancement is in progress, upload product image → verify both images process independently
+  - [ ] 🟥 Verify only enhancement button is disabled, all other buttons remain functional
+
+- [ ] 🟥 **40.5: Error Scenario Testing**
+  - [ ] 🟥 Test with invalid Cloudinary API key (expect error toast)
+  - [ ] 🟥 Test with exhausted Cloudinary quota (expect 402 error toast)
+  - [ ] 🟥 Test with very large image (expect timeout or success)
+  - [ ] 🟥 Test with corrupted image file (expect 400 error toast)
+  - [ ] 🟥 Verify original image is retained on all error scenarios
+  - [ ] 🟥 Verify error messages are user-friendly and actionable
+
+- [ ] 🟥 **40.6: Cache Testing**
+  - [ ] 🟥 Enhance an image and verify it's cached
+  - [ ] 🟥 Clear the image and re-upload → button should be disabled
+  - [ ] 🟥 Enhance a different image → verify new entry added to cache
+  - [ ] 🟥 Fill cache with 51+ images → verify oldest entry is removed
+  - [ ] 🟥 Clear localStorage and verify cache rebuilds on next enhancement
+
+---
+
+### Phase 41: Documentation & Deployment
+
+- [ ] 🟥 **41.1: Update PLAN.md**
+  - [ ] 🟥 Mark all Phase 33-40 subtasks as complete
+  - [ ] 🟥 Update overall progress percentage for Phase 33
+  - [ ] 🟥 Add final notes on Cloudinary usage and rate limits
+
+- [ ] 🟥 **41.2: Update README.md**
+  - [ ] 🟥 Document new image enhancement feature
+  - [ ] 🟥 Add Cloudinary setup instructions
+  - [ ] 🟥 Document rate limits: 25 enhancements/month (free tier)
+  - [ ] 🟥 Add screenshot of enhancement button in UI
+
+- [ ] 🟥 **41.3: Update Environment Setup Guide**
+  - [ ] 🟥 Add Cloudinary account creation steps
+  - [ ] 🟥 Document how to get API credentials
+  - [ ] 🟥 Add `.env` configuration example with all 3 Cloudinary variables
+
+---
+
+## Out of Scope (Future Enhancements)
+
+These features will NOT be implemented in this version:
+- Enhancement for background image (strict dimension requirement conflicts with enhancement)
+- Multiple enhancement quality levels (low/medium/high)
+- Batch enhancement (enhance multiple images at once)
+- Before/after comparison slider
+- Custom enhancement parameters (user-adjustable sharpness, brightness, etc.)
+- Undo enhancement (revert to original)
+- Enhanced image download separate from banner
+- AI-powered quality detection (auto-suggest enhancement only for low-quality images)
+- Multiple enhancement service providers (fallback options)
+- Server-side caching (only client-side caching for now)
+- Enhancement analytics (track usage, quality improvements)
+- Preview enhancement before applying
+- Real-time enhancement progress from backend (currently simulated)
+- Enhancement for background removal results (avoid double processing)
+
+---

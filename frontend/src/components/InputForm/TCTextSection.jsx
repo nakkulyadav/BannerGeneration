@@ -8,8 +8,11 @@
  * - Color picker for text color
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { ColorPicker, ToggleSwitch } from '../shared';
+import FontSelector from '../shared/FontSelector';
+import WeightSelector from '../shared/WeightSelector';
+import { getClosestWeight } from '../../constants/fontConfig';
 
 /**
  * @param {Object} props
@@ -17,6 +20,31 @@ import { ColorPicker, ToggleSwitch } from '../shared';
  * @param {function} props.onUpdate - Update handler
  */
 function TCTextSection({ tcText, onUpdate }) {
+  const [autoOpenWeight, setAutoOpenWeight] = useState(false);
+
+  /**
+   * Handle font change with closest weight fallback
+   */
+  const handleFontChange = useCallback(
+    (fontFamily) => {
+      const closestWeight = getClosestWeight(fontFamily, tcText.fontWeight);
+      onUpdate({ fontFamily, fontWeight: closestWeight });
+      setAutoOpenWeight(true);
+      setTimeout(() => setAutoOpenWeight(false), 200);
+    },
+    [tcText.fontWeight, onUpdate]
+  );
+
+  /**
+   * Handle weight change
+   */
+  const handleWeightChange = useCallback(
+    (fontWeight) => {
+      onUpdate({ fontWeight });
+    },
+    [onUpdate]
+  );
+
   /**
    * Handle toggle switch for enabling/disabling T&C display
    */
@@ -70,6 +98,22 @@ function TCTextSection({ tcText, onUpdate }) {
       {/* Content only shown when enabled */}
       {tcText.enabled && (
         <div className="space-y-4 animate-fade-in">
+          {/* Font and Weight selectors */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <FontSelector
+              value={tcText.fontFamily}
+              onChange={handleFontChange}
+              label="Font:"
+            />
+            <WeightSelector
+              fontFamily={tcText.fontFamily}
+              value={tcText.fontWeight}
+              onChange={handleWeightChange}
+              label="Weight:"
+              autoOpen={autoOpenWeight}
+            />
+          </div>
+
           {/* Text input - dark mode */}
           <div className="space-y-2">
             <input
