@@ -9,20 +9,21 @@
  */
 
 import axios from 'axios';
+import FormData from 'form-data';
 
 /**
  * Remove background from an image using remove.bg API
  *
- * @param {string} imageUrl - Public URL of the image to process
+ * Supports two input modes:
+ * - HTTP/HTTPS URL: sent as `image_url` parameter
+ * - Base64 data URL: decoded and sent as `image_file` binary upload
+ *
+ * @param {string} imageSource - Public URL or base64 data URL (data:image/...;base64,...)
  * @returns {Promise<string>} Base64 data URL of the processed image (PNG with transparency)
  *
  * @throws {Error} If API key is missing, rate limit exceeded, or processing fails
- *
- * @example
- * const processedImage = await removeBackground('https://example.com/image.jpg');
- * // Returns: 'data:image/png;base64,iVBORw0KGgo...'
  */
-async function removeBackground(imageUrl) {
+async function removeBackground(imageSource) {
   const apiKey = process.env.REMOVE_BG_API_KEY;
 
   // Validate API key
@@ -30,31 +31,64 @@ async function removeBackground(imageUrl) {
     throw new Error('Remove.bg API key is not configured. Please add REMOVE_BG_API_KEY to .env file.');
   }
 
-  // Validate image URL
-  if (!imageUrl || !imageUrl.startsWith('http')) {
-    throw new Error('Invalid image URL. Must be a valid HTTP/HTTPS URL.');
+  // Validate input
+  if (!imageSource) {
+    throw new Error('Invalid image source. Must be a URL or base64 data URL.');
+  }
+
+  const isBase64 = imageSource.startsWith('data:');
+
+  if (!isBase64 && !imageSource.startsWith('http')) {
+    throw new Error('Invalid image source. Must be a valid HTTP/HTTPS URL or data URL.');
   }
 
   try {
-    console.log('[remove.bg] Processing image:', imageUrl);
+    console.log('[remove.bg] Processing image:', isBase64 ? 'base64 data URL' : imageSource);
 
-    // Call remove.bg API
-    const response = await axios.post(
-      'https://api.remove.bg/v1.0/removebg',
-      {
-        image_url: imageUrl,
-        size: 'auto', // Automatic size selection (up to original resolution)
-        format: 'png', // PNG format with transparency
-        crop: false,   // Don't crop the image
-      },
-      {
+    let requestConfig;
+
+    if (isBase64) {
+      // Device upload: extract raw binary from data URL and send as file upload
+      const base64Data = imageSource.split(',')[1];
+      const imageBuffer = Buffer.from(base64Data, 'base64');
+
+      const form = new FormData();
+      form.append('image_file', imageBuffer, { filename: 'image.png', contentType: 'image/png' });
+      form.append('size', 'auto');
+      form.append('format', 'png');
+
+      requestConfig = {
+        method: 'post',
+        url: 'https://api.remove.bg/v1.0/removebg',
+        data: form,
+        headers: {
+          ...form.getHeaders(),
+          'X-Api-Key': apiKey,
+        },
+        responseType: 'arraybuffer',
+        timeout: 30000,
+      };
+    } else {
+      // URL mode: send as JSON body with image_url
+      requestConfig = {
+        method: 'post',
+        url: 'https://api.remove.bg/v1.0/removebg',
+        data: {
+          image_url: imageSource,
+          size: 'auto',
+          format: 'png',
+          crop: false,
+        },
         headers: {
           'X-Api-Key': apiKey,
         },
-        responseType: 'arraybuffer', // Get binary data
-        timeout: 30000, // 30 second timeout
-      }
-    );
+        responseType: 'arraybuffer',
+        timeout: 30000,
+      };
+    }
+
+    // Call remove.bg API
+    const response = await axios(requestConfig);
 
     // Convert binary data to base64
     const base64Image = Buffer.from(response.data, 'binary').toString('base64');

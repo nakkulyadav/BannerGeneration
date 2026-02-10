@@ -4,6 +4,8 @@
  * Renders the banner preview using Fabric.js canvas.
  * Uses useBannerGenerator hook for debounced generation.
  * Exposes getCanvas() method via ref for download functionality.
+ *
+ * Supports dynamic dimensions for different preset types (banner, widget, etc.).
  */
 
 import { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
@@ -13,9 +15,17 @@ import { BANNER } from '../../constants/bannerConfig';
 /**
  * @param {Object} props
  * @param {Object} props.bannerState - Current banner state from App
+ * @param {number} [props.width] - Canvas width (defaults to BANNER.WIDTH)
+ * @param {number} [props.height] - Canvas height (defaults to BANNER.HEIGHT)
+ * @param {string} [props.dimensionType] - Preset type for generator routing
  * @param {React.Ref} ref - Forwarded ref for imperative handle
  */
-const BannerCanvas = forwardRef(function BannerCanvas({ bannerState }, ref) {
+const BannerCanvas = forwardRef(function BannerCanvas({
+  bannerState,
+  width = BANNER.WIDTH,
+  height = BANNER.HEIGHT,
+  dimensionType = 'promotional_banner',
+}, ref) {
   // ==========================================================================
   // REFS
   // ==========================================================================
@@ -33,7 +43,7 @@ const BannerCanvas = forwardRef(function BannerCanvas({ bannerState }, ref) {
     error,
     setCanvasElement,
     getFabricCanvas,
-  } = useBannerGenerator(bannerState);
+  } = useBannerGenerator(bannerState, dimensionType);
 
   // ==========================================================================
   // IMPERATIVE HANDLE
@@ -83,8 +93,8 @@ const BannerCanvas = forwardRef(function BannerCanvas({ bannerState }, ref) {
         {/* Canvas element - Fabric.js will attach to this */}
         <canvas
           ref={canvasElementRef}
-          width={BANNER.WIDTH}
-          height={BANNER.HEIGHT}
+          width={width}
+          height={height}
           style={{
             maxWidth: '100%',
             maxHeight: '100%',

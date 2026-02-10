@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useState } from 'react';
-import { ColorPicker, ToggleSwitch } from '../shared';
+import { ColorPicker, ToggleSwitch, TextToolsButtons } from '../shared';
 import FontSelector from '../shared/FontSelector';
 import WeightSelector from '../shared/WeightSelector';
 import { getClosestWeight } from '../../constants/fontConfig';
@@ -138,9 +138,16 @@ function SubheadingSection({ subheading, onUpdate, onUpdateLeft, onUpdateRight }
 
           {/* Text input */}
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-gray-400">
-              Subheading Text
-            </label>
+            <div className="flex items-center gap-1">
+              <label className="block text-xs font-medium text-gray-400">
+                Subheading Text
+              </label>
+              {/* Translate & Spell-check (single mode) */}
+              <TextToolsButtons
+                text={subheading.left.text}
+                onApply={(t) => onUpdateLeft({ text: t })}
+              />
+            </div>
             <input
               type="text"
               value={subheading.left.text}
@@ -163,9 +170,17 @@ function SubheadingSection({ subheading, onUpdate, onUpdateLeft, onUpdateRight }
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
           {/* Left part */}
           <div className="space-y-3 p-3 bg-[#1a1a1a] rounded-lg border border-[#3a3a3a] transition-colors hover:border-[#4a4a4a]">
-            <span className="text-xs font-medium text-gray-500 uppercase">
-              Left (Original Price)
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-gray-500 uppercase">
+                Left (Original Price)
+              </span>
+              {/* Spell-check only — numeric price field, no translation */}
+              <TextToolsButtons
+                text={subheading.left.text}
+                onApply={(t) => onUpdateLeft({ text: t })}
+                showTranslate={false}
+              />
+            </div>
 
             {/* Weight Selector for Left */}
             <WeightSelector
@@ -200,9 +215,17 @@ function SubheadingSection({ subheading, onUpdate, onUpdateLeft, onUpdateRight }
 
           {/* Right part */}
           <div className="space-y-3 p-3 bg-[#1a1a1a] rounded-lg border border-[#3a3a3a] transition-colors hover:border-[#4a4a4a]">
-            <span className="text-xs font-medium text-gray-500 uppercase">
-              Right (Current Price)
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-gray-500 uppercase">
+                Right (Current Price)
+              </span>
+              {/* Spell-check only — numeric price field, no translation */}
+              <TextToolsButtons
+                text={subheading.right.text}
+                onApply={(t) => onUpdateRight({ text: t })}
+                showTranslate={false}
+              />
+            </div>
 
             {/* Weight Selector for Right */}
             <WeightSelector

@@ -8,16 +8,41 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 /**
+ * Check if a URL is a base64 data URL (from device uploads)
+ *
+ * @param {string} url - URL string to check
+ * @returns {boolean} True if the string is a data URL
+ */
+function isDataUrl(url) {
+  return typeof url === 'string' && url.startsWith('data:');
+}
+
+/**
+ * Normalize field parameter for API calls
+ * Maps custom element IDs and other fields to valid API values
+ *
+ * @param {string} field - Field identifier
+ * @returns {'logo'|'product'} Normalized field value
+ */
+function normalizeFieldForApi(field) {
+  // Keep logo as-is
+  if (field === 'logo') return 'logo';
+  // Everything else (product, background, custom element IDs) maps to 'product'
+  return 'product';
+}
+
+/**
  * Search for images via Google Custom Search (through backend proxy)
  *
  * @param {string} query - Search term
- * @param {'logo'|'product'} field - Which field the search is for
+ * @param {string} field - Which field the search is for (will be normalized to 'logo' or 'product')
  * @returns {Promise<{images: Array, total: number}>}
  *
  * @throws {Error} If search fails or API returns an error
  */
 export async function searchImages(query, field) {
-  const params = new URLSearchParams({ q: query, field });
+  const normalizedField = normalizeFieldForApi(field);
+  const params = new URLSearchParams({ q: query, field: normalizedField });
   const response = await fetch(`${API_URL}/api/search-images?${params}`);
 
   if (!response.ok) {
@@ -45,12 +70,18 @@ export async function searchImages(query, field) {
  * }
  */
 export async function removeBackground(imageUrl) {
+  // Device uploads produce data URLs (base64) which the backend can't fetch via HTTP.
+  // Send base64 data directly so the backend can forward it as a file upload.
+  const body = isDataUrl(imageUrl)
+    ? { imageBase64: imageUrl }
+    : { imageUrl };
+
   const response = await fetch(`${API_URL}/api/remove-background`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ imageUrl }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -93,12 +124,20 @@ export async function removeBackground(imageUrl) {
  * }
  */
 export async function enhanceImage(imageUrl, field) {
+  const normalizedField = normalizeFieldForApi(field);
+
+  // Device uploads produce data URLs (base64) which the backend can't fetch via HTTP.
+  // Send base64 data directly so the backend can upload it to Cloudinary.
+  const body = isDataUrl(imageUrl)
+    ? { imageBase64: imageUrl, field: normalizedField }
+    : { imageUrl, field: normalizedField };
+
   const response = await fetch(`${API_URL}/api/enhance-image`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ imageUrl, field }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {

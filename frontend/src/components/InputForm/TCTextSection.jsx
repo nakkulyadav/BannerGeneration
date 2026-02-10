@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useState } from 'react';
-import { ColorPicker, ToggleSwitch } from '../shared';
+import { ColorPicker, ToggleSwitch, TextToolsButtons } from '../shared';
 import FontSelector from '../shared/FontSelector';
 import WeightSelector from '../shared/WeightSelector';
 import { getClosestWeight } from '../../constants/fontConfig';
@@ -116,6 +116,14 @@ function TCTextSection({ tcText, onUpdate }) {
 
           {/* Text input - dark mode */}
           <div className="space-y-2">
+            <div className="flex items-center gap-1">
+              <label className="block text-xs font-medium text-gray-400">T&C Text</label>
+              {/* Translate & Spell-check */}
+              <TextToolsButtons
+                text={tcText.text}
+                onApply={(t) => onUpdate({ text: t })}
+              />
+            </div>
             <input
               type="text"
               value={tcText.text}

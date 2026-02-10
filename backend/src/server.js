@@ -9,6 +9,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import imageSearchRouter from './routes/imageSearch.js';
+import textToolsRouter from './routes/textTools.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -27,7 +28,9 @@ app.use(cors({
   ],
 }));
 
-app.use(express.json());
+// Increase JSON body limit to 50MB — default 100KB rejects base64 image payloads
+// from device uploads sent to Remove BG / Enhance endpoints
+app.use(express.json({ limit: '50mb' }));
 
 // ---------------------------------------------------------------------------
 // Routes
@@ -40,6 +43,9 @@ app.get('/api/health', (_req, res) => {
 
 // Image search proxy
 app.use('/api', imageSearchRouter);
+
+// Text tools (translate + spell-check)
+app.use('/api', textToolsRouter);
 
 // ---------------------------------------------------------------------------
 // Start

@@ -23,10 +23,27 @@ import { searchImages, removeBackground } from '../../services/imageSearchServic
 
 /**
  * Field label map for display
+ * Maps field identifiers to human-readable labels
  */
 const FIELD_LABELS = {
   logo: 'Brand Logo',
   product: 'Product Image',
+  background: 'Background',
+};
+
+/**
+ * Get the display label for a field
+ * Handles both preset fields and custom element IDs
+ * @param {string} field - Field identifier
+ * @returns {string} Human-readable label
+ */
+const getFieldLabel = (field) => {
+  if (!field) return 'Image';
+  if (FIELD_LABELS[field]) return FIELD_LABELS[field];
+  // For custom element IDs like 'image_1', return a generic label
+  if (field.startsWith('image_')) return 'Image';
+  if (field.startsWith('text_')) return 'Text';
+  return 'Image';
 };
 
 /**
@@ -139,11 +156,11 @@ function ImageSearchPanel({ activeField, onSelect, onClose }) {
   }, [selectedImage, onSelect]);
 
   return (
-    <div className="bg-[#1a1a1a] rounded-xl border border-[#2a2a2a] shadow-lg overflow-hidden animate-fade-in">
+    <div className="bg-[#1a1a1a] rounded-xl border border-[#2a2a2a] shadow-lg overflow-hidden animate-fade-in h-full flex flex-col">
       {/* ----------------------------------------------------------------
           Header — shows active field label and close button
           ---------------------------------------------------------------- */}
-      <div className="px-3 sm:px-4 py-3 bg-[#151515] border-b border-[#2a2a2a] flex items-center justify-between">
+      <div className="px-3 sm:px-4 py-3 bg-[#151515] border-b border-[#2a2a2a] flex items-center justify-between shrink-0">
         <div>
           <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide flex items-center gap-2">
             <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,7 +168,7 @@ function ImageSearchPanel({ activeField, onSelect, onClose }) {
             </svg>
             AI Search
             <span className="text-purple-400">—</span>
-            <span className="text-purple-400 normal-case">{FIELD_LABELS[activeField]}</span>
+            <span className="text-purple-400 normal-case">{getFieldLabel(activeField)}</span>
           </h2>
           <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">
             Search for transparent-background images
@@ -172,9 +189,9 @@ function ImageSearchPanel({ activeField, onSelect, onClose }) {
       </div>
 
       {/* ----------------------------------------------------------------
-          Body — search input + results grid
+          Body — scrollable area with search input + results grid
           ---------------------------------------------------------------- */}
-      <div className="p-3 sm:p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4">
         {/* Search input row */}
         <div className="flex gap-2">
           <input
@@ -223,9 +240,8 @@ function ImageSearchPanel({ activeField, onSelect, onClose }) {
           </div>
         )}
 
-        {/* Results grid — 10 rows × 5 columns (scrollable) */}
+        {/* Results grid — 10 rows × 5 columns */}
         {!isLoading && results.length > 0 && (
-          <div className="max-h-[480px] overflow-y-auto scrollbar-thin pr-1">
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
             {results.map((image) => (
               <button
@@ -267,7 +283,6 @@ function ImageSearchPanel({ activeField, onSelect, onClose }) {
               </button>
             ))}
           </div>
-          </div>
         )}
 
         {/* Empty state — after search with no results */}
@@ -287,14 +302,33 @@ function ImageSearchPanel({ activeField, onSelect, onClose }) {
             <svg className="w-12 h-12 text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <p className="text-sm text-gray-400">Search for {FIELD_LABELS[activeField].toLowerCase()} images</p>
+            <p className="text-sm text-gray-400">Search for {getFieldLabel(activeField).toLowerCase()} images</p>
             <p className="text-xs text-gray-500 mt-1">Results will appear here</p>
           </div>
         )}
 
-        {/* Action buttons — shown when an image is selected */}
-        {selectedImage && !isLoading && (
-          <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-[#2a2a2a]">
+        {/* Pixabay attribution (required by their API terms) */}
+        {results.length > 0 && (
+          <p className="text-xs text-gray-600 text-center">
+            Images provided by{' '}
+            <a
+              href="https://pixabay.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-500 hover:text-gray-400 underline"
+            >
+              Pixabay
+            </a>
+          </p>
+        )}
+      </div>
+
+      {/* ----------------------------------------------------------------
+          Footer — action buttons, always visible when image is selected
+          ---------------------------------------------------------------- */}
+      {selectedImage && !isLoading && (
+        <div className="px-3 sm:px-4 py-3 border-t border-[#2a2a2a] bg-[#1a1a1a] shrink-0">
+          <div className="flex flex-col sm:flex-row gap-2">
             {/* Apply directly */}
             <button
               type="button"
@@ -343,23 +377,8 @@ function ImageSearchPanel({ activeField, onSelect, onClose }) {
               )}
             </button>
           </div>
-        )}
-
-        {/* Pixabay attribution (required by their API terms) */}
-        {results.length > 0 && (
-          <p className="text-xs text-gray-600 text-center">
-            Images provided by{' '}
-            <a
-              href="https://pixabay.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-500 hover:text-gray-400 underline"
-            >
-              Pixabay
-            </a>
-          </p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

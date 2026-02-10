@@ -22,19 +22,19 @@ cloudinary.config({
 /**
  * Enhances an image using Cloudinary's AI-powered transformations
  *
- * @param {string} imageUrl - The URL of the image to enhance
+ * Supports two input modes:
+ * - HTTP/HTTPS URL: Cloudinary fetches the image from the URL
+ * - Base64 data URL: Cloudinary accepts data URLs natively for upload
+ *
+ * @param {string} imageSource - URL or base64 data URL (data:image/...;base64,...)
  * @param {string} field - The field type ('logo' | 'product') for field-specific enhancement
  * @returns {Promise<{enhancedImageUrl: string, message: string}>} - Enhanced image URL and success message
  * @throws {Error} - Throws error with specific code for different failure scenarios
- *
- * @example
- * const result = await enhanceImage('https://example.com/image.png', 'logo');
- * console.log(result.enhancedImageUrl); // Cloudinary CDN URL
  */
-export async function enhanceImage(imageUrl, field) {
-  // Validate inputs
-  if (!imageUrl || typeof imageUrl !== 'string') {
-    const error = new Error('Invalid image URL provided');
+export async function enhanceImage(imageSource, field) {
+  // Validate inputs — accept both HTTP URLs and base64 data URLs
+  if (!imageSource || typeof imageSource !== 'string') {
+    const error = new Error('Invalid image source provided');
     error.code = 'INVALID_IMAGE';
     error.statusCode = 400;
     throw error;
@@ -56,14 +56,15 @@ export async function enhanceImage(imageUrl, field) {
   }
 
   try {
-    console.log(`[Image Enhancement] Starting enhancement for ${field} image: ${imageUrl}`);
+    const isBase64 = imageSource.startsWith('data:');
+    console.log(`[Image Enhancement] Starting enhancement for ${field} image: ${isBase64 ? 'base64 data URL' : imageSource}`);
 
     // Field-specific enhancement parameters
     const transformations = getEnhancementTransformations(field);
 
     // Upload image to Cloudinary with transformations
-    // Cloudinary will fetch the image from the URL, apply transformations, and return the enhanced version
-    const uploadResult = await cloudinary.uploader.upload(imageUrl, {
+    // Cloudinary accepts both HTTP URLs and base64 data URLs natively
+    const uploadResult = await cloudinary.uploader.upload(imageSource, {
       folder: `banner-generator/${field}`,
       transformation: transformations,
       resource_type: 'image',

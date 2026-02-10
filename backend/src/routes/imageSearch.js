@@ -99,39 +99,51 @@ router.get('/search-images', async (req, res) => {
  *
  * Remove background from an image using remove.bg API
  *
- * Body:
- *   imageUrl — URL of the image to process (required)
+ * Body (one of):
+ *   imageUrl    — Public URL of the image to process
+ *   imageBase64 — Base64 data URL from device uploads (data:image/...;base64,...)
  *
  * Returns:
  *   { processedImageUrl: string } — Base64 data URL of processed image
  */
 router.post('/remove-background', async (req, res) => {
   try {
-    const { imageUrl } = req.body;
+    const { imageUrl, imageBase64 } = req.body;
 
     // -----------------------------------------------------------------------
-    // Validation
+    // Validation — accept either a URL or a base64 data URL
     // -----------------------------------------------------------------------
 
-    if (!imageUrl || typeof imageUrl !== 'string') {
+    if (!imageUrl && !imageBase64) {
       return res.status(400).json({
-        error: 'Missing required parameter: imageUrl. Must be a valid image URL.'
+        error: 'Missing required parameter: imageUrl or imageBase64.'
       });
     }
 
-    if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-      return res.status(400).json({
-        error: 'Invalid imageUrl. Must be a valid HTTP/HTTPS URL.'
-      });
+    if (imageUrl) {
+      if (typeof imageUrl !== 'string' || (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://'))) {
+        return res.status(400).json({
+          error: 'Invalid imageUrl. Must be a valid HTTP/HTTPS URL.'
+        });
+      }
+    }
+
+    if (imageBase64) {
+      if (typeof imageBase64 !== 'string' || !imageBase64.startsWith('data:')) {
+        return res.status(400).json({
+          error: 'Invalid imageBase64. Must be a valid data URL (data:image/...;base64,...).'
+        });
+      }
     }
 
     // -----------------------------------------------------------------------
-    // Process image with remove.bg
+    // Process image with remove.bg (URL or base64)
     // -----------------------------------------------------------------------
 
-    console.log('[remove-background] Processing:', imageUrl);
+    const source = imageBase64 || imageUrl;
+    console.log('[remove-background] Processing:', imageBase64 ? 'base64 data URL' : imageUrl);
 
-    const processedImageUrl = await removeBgService(imageUrl);
+    const processedImageUrl = await removeBgService(source);
 
     console.log('[remove-background] Success');
 
@@ -199,33 +211,45 @@ router.post('/remove-background', async (req, res) => {
  *
  * Enhance image quality using Cloudinary AI transformations
  *
- * Body:
- *   imageUrl — URL of the image to enhance (required)
- *   field    — "logo" | "product" (required, determines enhancement parameters)
+ * Body (one of):
+ *   imageUrl    — Public URL of the image to enhance
+ *   imageBase64 — Base64 data URL from device uploads (data:image/...;base64,...)
+ *   field       — "logo" | "product" (required, determines enhancement parameters)
  *
  * Returns:
  *   { enhancedImageUrl: string, message: string } — Enhanced image URL from Cloudinary CDN
  */
 router.post('/enhance-image', async (req, res) => {
   try {
-    const { imageUrl, field } = req.body;
+    const { imageUrl, imageBase64, field } = req.body;
 
     // -----------------------------------------------------------------------
-    // Validation
+    // Validation — accept either a URL or a base64 data URL
     // -----------------------------------------------------------------------
 
-    if (!imageUrl || typeof imageUrl !== 'string') {
+    if (!imageUrl && !imageBase64) {
       return res.status(400).json({
-        error: 'Missing required parameter: imageUrl. Must be a valid image URL.',
+        error: 'Missing required parameter: imageUrl or imageBase64.',
         code: 'INVALID_IMAGE'
       });
     }
 
-    if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-      return res.status(400).json({
-        error: 'Invalid imageUrl. Must be a valid HTTP/HTTPS URL.',
-        code: 'INVALID_IMAGE'
-      });
+    if (imageUrl) {
+      if (typeof imageUrl !== 'string' || (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://'))) {
+        return res.status(400).json({
+          error: 'Invalid imageUrl. Must be a valid HTTP/HTTPS URL.',
+          code: 'INVALID_IMAGE'
+        });
+      }
+    }
+
+    if (imageBase64) {
+      if (typeof imageBase64 !== 'string' || !imageBase64.startsWith('data:')) {
+        return res.status(400).json({
+          error: 'Invalid imageBase64. Must be a valid data URL (data:image/...;base64,...).',
+          code: 'INVALID_IMAGE'
+        });
+      }
     }
 
     if (!field || !['logo', 'product'].includes(field)) {
@@ -236,12 +260,13 @@ router.post('/enhance-image', async (req, res) => {
     }
 
     // -----------------------------------------------------------------------
-    // Enhance image using Cloudinary
+    // Enhance image using Cloudinary (URL or base64)
     // -----------------------------------------------------------------------
 
-    console.log('[enhance-image] Processing:', imageUrl, 'Field:', field);
+    const source = imageBase64 || imageUrl;
+    console.log('[enhance-image] Processing:', imageBase64 ? 'base64 data URL' : imageUrl, 'Field:', field);
 
-    const result = await enhanceImage(imageUrl, field);
+    const result = await enhanceImage(source, field);
 
     console.log('[enhance-image] Success:', result.enhancedImageUrl);
 

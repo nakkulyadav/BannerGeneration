@@ -5,7 +5,7 @@
  */
 
 import { useCallback, useState } from 'react';
-import { ColorPicker } from '../shared';
+import { ColorPicker, TextToolsButtons } from '../shared';
 import FontSelector from '../shared/FontSelector';
 import WeightSelector from '../shared/WeightSelector';
 import { TEXT } from '../../constants/bannerConfig';
@@ -105,10 +105,18 @@ function HeadingSection({ heading, onUpdate }) {
       {/* Heading text input - dark mode */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="block text-sm font-medium text-gray-300">
-            Product Heading
-            <span className="text-red-400 ml-1">*</span>
-          </label>
+          <div className="flex items-center gap-1">
+            <label className="block text-sm font-medium text-gray-300">
+              Product Heading
+              <span className="text-red-400 ml-1">*</span>
+            </label>
+            {/* Translate & Spell-check */}
+            <TextToolsButtons
+              text={heading.text}
+              onApply={(t) => onUpdate({ text: t })}
+              maxLength={40}
+            />
+          </div>
           <span
             className={`text-xs px-2 py-0.5 rounded-full ${
               isNearLimit

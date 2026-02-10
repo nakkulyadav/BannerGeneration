@@ -11,8 +11,10 @@ import { useDropzone } from 'react-dropzone';
 
 /**
  * @param {Object} props
- * @param {string} props.imageUrl - Current image URL for preview
- * @param {function} props.onUpload - Callback when file is uploaded (receives File)
+ * @param {string} props.imageUrl - Current image URL for preview (legacy prop)
+ * @param {Object} props.value - Current value object { imageUrl: string } (alternative to imageUrl)
+ * @param {function} props.onUpload - Callback when file is uploaded (receives File, imageUrl)
+ * @param {function} props.onChange - Callback alias for onUpload (receives File, imageUrl)
  * @param {function} props.onClear - Callback to clear the image
  * @param {string} props.label - Label for the upload area
  * @param {boolean} props.required - Whether this field is required
@@ -20,10 +22,13 @@ import { useDropzone } from 'react-dropzone';
  * @param {string} props.error - Error message to display
  * @param {string} props.accept - Accepted file types
  * @param {boolean} props.isLoading - External loading state (optional)
+ * @param {boolean} props.compact - Compact mode (smaller padding)
  */
 function ImageUpload({
-  imageUrl,
+  imageUrl: imageUrlProp,
+  value,
   onUpload,
+  onChange,
   onClear,
   label,
   required = false,
@@ -31,7 +36,13 @@ function ImageUpload({
   error,
   accept = 'image/jpeg,image/png,image/webp',
   isLoading: externalLoading = false,
+  compact = false,
 }) {
+  // Support both prop patterns: imageUrl directly or value.imageUrl
+  const imageUrl = imageUrlProp || value?.imageUrl || '';
+
+  // Support both callback patterns: onUpload or onChange
+  const uploadCallback = onUpload || onChange;
   // ==========================================================================
   // STATE
   // ==========================================================================
@@ -43,16 +54,32 @@ function ImageUpload({
   const isLoading = externalLoading || isProcessing;
 
   /**
+   * Convert a File to a data URL
+   */
+  const fileToDataUrl = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  /**
    * Handle file drop with loading state
    */
   const onDrop = useCallback(
     async (acceptedFiles) => {
-      if (acceptedFiles.length > 0) {
+      if (acceptedFiles.length > 0 && uploadCallback) {
         setIsProcessing(true);
         try {
+          const file = acceptedFiles[0];
+          // Convert file to data URL for immediate preview and use
+          const dataUrl = await fileToDataUrl(file);
+
           // Small delay to show loading state (min 200ms for UX)
           await Promise.all([
-            onUpload(acceptedFiles[0]),
+            uploadCallback(file, dataUrl),
             new Promise(resolve => setTimeout(resolve, 200))
           ]);
         } finally {
@@ -60,7 +87,7 @@ function ImageUpload({
         }
       }
     },
-    [onUpload]
+    [uploadCallback]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -108,7 +135,9 @@ function ImageUpload({
         // Dropzone area - dark mode styling
         <div
           {...getRootProps()}
-          className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all duration-200 ${
+          className={`border-2 border-dashed rounded-lg text-center cursor-pointer transition-all duration-200 ${
+            compact ? 'p-4' : 'p-6'
+          } ${
             isLoading
               ? 'border-blue-500/50 bg-blue-900/20 cursor-wait'
               : isDragActive
@@ -123,7 +152,7 @@ function ImageUpload({
           {/* Loading spinner or upload icon */}
           {isLoading ? (
             <svg
-              className="w-10 h-10 mx-auto mb-2 text-blue-400 animate-spin"
+              className={`${compact ? 'w-8 h-8' : 'w-10 h-10'} mx-auto mb-2 text-blue-400 animate-spin`}
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -144,7 +173,7 @@ function ImageUpload({
             </svg>
           ) : (
             <svg
-              className={`w-10 h-10 mx-auto mb-2 transition-colors duration-150 ${
+              className={`${compact ? 'w-8 h-8' : 'w-10 h-10'} mx-auto mb-2 transition-colors duration-150 ${
                 isDragActive ? 'text-blue-400' : 'text-gray-500'
               }`}
               fill="none"

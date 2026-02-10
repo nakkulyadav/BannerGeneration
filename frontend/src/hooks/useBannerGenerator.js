@@ -3,20 +3,29 @@
  *
  * Manages banner generation with debouncing for performance.
  * Handles canvas lifecycle, loading states, and error handling.
+ *
+ * Supports multiple preset types:
+ * - promotional_banner: Uses generateBanner (creates its own Fabric.Canvas)
+ * - widget / others: Uses generatePresetCanvas (operates on existing Fabric.Canvas)
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import * as fabric from 'fabric';
 import { generateBanner } from '../utils/bannerGenerator';
+import { generatePresetCanvas } from '../utils/presetGenerator';
+import { getPresetConfig } from '../constants/presetConfigs';
 
 // Debounce delay in milliseconds
 const DEBOUNCE_DELAY = 300;
 
 /**
  * Custom hook for debounced banner generation
+ *
  * @param {Object} bannerState - Current banner state from App
+ * @param {string} dimensionType - Preset type ('promotional_banner', 'widget', etc.)
  * @returns {Object} Hook state and functions
  */
-export function useBannerGenerator(bannerState) {
+export function useBannerGenerator(bannerState, dimensionType = 'promotional_banner') {
   // ==========================================================================
   // STATE
   // ==========================================================================
@@ -48,8 +57,9 @@ export function useBannerGenerator(bannerState) {
   // ==========================================================================
 
   /**
-   * Core generation function - generates banner on canvas
-   * Called after debounce delay
+   * Core generation function - generates banner on canvas.
+   * For promotional_banner: delegates to generateBanner (creates its own Fabric.Canvas).
+   * For other presets (widget, etc.): creates Fabric.Canvas and calls generatePresetCanvas.
    */
   const executeGeneration = useCallback(async () => {
     // Guard: ensure canvas element exists
@@ -72,8 +82,25 @@ export function useBannerGenerator(bannerState) {
         fabricCanvasRef.current = null;
       }
 
-      // Generate new banner
-      const canvas = await generateBanner(canvasRef.current, bannerState);
+      let canvas;
+
+      if (dimensionType === 'promotional_banner') {
+        // Promotional banner uses its own full-featured generator
+        canvas = await generateBanner(canvasRef.current, bannerState);
+      } else {
+        // Other presets: create Fabric.Canvas then call generatePresetCanvas
+        const config = getPresetConfig(dimensionType);
+        const { width, height } = config?.dimensions || { width: 164, height: 164 };
+
+        canvas = new fabric.Canvas(canvasRef.current, {
+          width,
+          height,
+          backgroundColor: '#ffffff',
+          selection: false,
+        });
+
+        await generatePresetCanvas(canvas, bannerState, dimensionType);
+      }
 
       // Store reference for cleanup and export
       if (isMountedRef.current) {
@@ -85,14 +112,14 @@ export function useBannerGenerator(bannerState) {
     } catch (err) {
       console.error('Banner generation failed:', err);
       if (isMountedRef.current) {
-        setError('Failed to generate banner preview');
+        setError('Failed to generate preview');
       }
     } finally {
       if (isMountedRef.current) {
         setIsGenerating(false);
       }
     }
-  }, [bannerState]);
+  }, [bannerState, dimensionType]);
 
   /**
    * Debounced generation trigger
